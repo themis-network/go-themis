@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
 	"github.com/themis-network/go-themis/trustee"
+	"log"
 )
 
 var(
@@ -19,7 +19,8 @@ func main(){
 		DataDir: *datadir,
 	}
 
-	var trustee = trustee.New(config)
-	trustee.Start()
+	var trusteeServer = trustee.New(config)
+	trusteeServer.Start()
+
 	//trustee.GetContractData()
 }
