@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/themis-network/go-themis/trustee"
-	"log"
 )
 
 var(
@@ -13,7 +12,6 @@ var(
 func main(){
 
 	flag.Parse()
-	log.Println(*datadir)
 
 	config := trustee.Config{
 		DataDir: *datadir,

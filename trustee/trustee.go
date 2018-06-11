@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"math/big"
+	"fmt"
+	"github.com/themis-network/go-themis/trustee/gopass"
 )
 
 var(
@@ -38,18 +40,22 @@ type ArbitrateEvent struct{
 
 func New(c Config) (t *TrusteeNode){
 
-	//todo read pw
-	var pass string = "123456"
+	//var pass string = "123456"
+	var pass string
+
+	fmt.Printf("Enter masked password: ")
+	maskedPassword, _ := gopass.GetPasswdMasked() // Masked
+	pass = string(maskedPassword)
 
 	blob1, err := ioutil.ReadFile(c.DataDir)
 	if err != nil {
-		log.Fatal("failed to read freshly persisted node key: %v", err)
+		log.Fatal("failed to read freshly persisted node key: ", err)
 	}
-	log.Println(string(blob1))
+	log.Println("loaded keystore file...")
 
 	privKey, err:= keystore.DecryptKey(blob1, pass)
 	if err != nil {
-		log.Fatal("failed to DecryptKey: %v", err)
+		log.Fatal("failed to DecryptKey: ", err)
 	}
 
 	contractClient, err := getContractClient()
