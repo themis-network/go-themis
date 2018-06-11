@@ -16,7 +16,7 @@ var(
 
 type TrusteeNode struct{
 
-	secrets map[int64]string //解密后的密钥碎片
+	secrets map[int64]string //每个订单对应的解密后的密钥碎片
 
 	arbitrateEvents chan ArbitrateEvent
 

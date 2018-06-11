@@ -86,9 +86,12 @@ func (t *TrusteeNode) monitor(){
 			t.processLog(eventLog)
 		}
 	}
-	log.Println("over monitor")
+	log.Println("finish monitor")
 }
 
+/**
+ process receive event from contract
+ */
 func (t *TrusteeNode)processLog(eventLog types.Log){
 
 	topic := eventLog.Topics[0].Hex()
@@ -100,13 +103,16 @@ func (t *TrusteeNode)processLog(eventLog types.Log){
 		juedge := eventLog.Topics[2].Hex()
 		t.orderWinner[orderId] = winner
 
-		log.Println("Process Log, get event judgeTopic, orderId:{}, winner:{}, judge:{}", orderId, winner, juedge)
+		log.Println("Process Log, event judgeTopic, orderId:{}, winner:{}, judge:{}", orderId, winner, juedge)
 
 		secret, err := t.getFragment(orderId, winner)
+		if err != nil {
+			log.Println("Error, getFragment error: %v", err)
+		}
 
 		decrypt, err := t.decrypt(secret)
 		if err != nil {
-			log.Println("Error, Decrypt error.")
+			log.Println("Error, Decrypt error: %v", err)
 		}
 
 		t.secrets[orderId] = decrypt
