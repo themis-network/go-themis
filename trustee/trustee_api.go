@@ -50,12 +50,12 @@ func NewTrusteeAPI(t *TrusteeNode) *TrusteeAPI {
 }
 
 /**
- 获取解密密钥碎片接口
+ 获取解密密钥碎片接口, RPC "method":"trustee_getDecryptSecret"
 1. verify the order's arbitrate result
 2. try get decrypt fragment from map. if fail, get the fragment from contract, then decrypt it
  */
 func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
-	log.Println("orderId:", string(orderId))
+	log.Println("GetDecryptSecret, orderId:", orderId)
 
 	if v, ok := t.trusteeNode.secrets[orderId]; ok {
 		return v
@@ -65,7 +65,7 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
 	if v, ok := t.trusteeNode.orderWinner[orderId]; ok {
 		winner = v
 	}else {
-		w, err := getWinner(orderId)
+		w, err := t.trusteeNode.getWinner(orderId)
 		if err != nil {
 			winner = nil
 		}else {
@@ -73,24 +73,30 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
 		}
 	}
 
-	log.Println("winner:", winner.Int64())
-
 	if winner == nil{
 		//没有仲裁的winner，返回JSON
-		errorJson := &jsonError{Code: -1, Message: "This order has no winner"}
-		jsons, errs := json.Marshal(errorJson) //转换成JSON返回的是byte[]
-		if errs != nil {
-			fmt.Println(errs.Error())
-		}
-		return string(jsons) //byte[]转换成string 输出
+		return errorJson(-1, "This order has no winner") //byte[]转换成string 输出
 	}
 
-	sectet, err := getFragment(orderId, winner)
+	log.Println("winner is: ", winner.Int64())
+
+	sectet, err := t.trusteeNode.getFragment(orderId, winner)
 	log.Println("secret from contract: ", sectet)
 	decSectet, err:= t.trusteeNode.decrypt(sectet)
 
 	if err != nil {
 		log.Println("decrypt secret error: ", err)
+		//todo return error
 	}
 	return decSectet
+}
+
+func errorJson(code int, message string) string{
+	errorJson := &jsonError{Code: code, Message: message}
+	jsons, errs := json.Marshal(errorJson) //转换成JSON返回的是byte[]
+	if errs != nil {
+		fmt.Println(errs.Error())
+		return ""
+	}
+	return string(jsons) //byte[]转换成string 输出
 }

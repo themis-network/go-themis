@@ -30,6 +30,13 @@ type Monitor struct{
 	trustee TrusteeNode
 }
 
+type ContractClient struct{
+	rawClient *ethclient.Client
+	ctx context.Context
+	trader *stub.TradeCaller
+}
+
+
 func getClient() (*ethclient.Client, error){
 	client, _ := ethclient.Dial(rawurl)
 	return client, nil
@@ -95,7 +102,7 @@ func (t *TrusteeNode)processLog(eventLog types.Log){
 
 		log.Println("Process Log, get event judgeTopic, orderId:{}, winner:{}, judge:{}", orderId, winner, juedge)
 
-		secret, err := getFragment(orderId, winner)
+		secret, err := t.getFragment(orderId, winner)
 
 		decrypt, err := t.decrypt(secret)
 		if err != nil {
@@ -112,56 +119,62 @@ func BytesToInt64(buf []byte) int64 {
 	return int64(binary.BigEndian.Uint64(buf))
 }
 
-func getOrderStatus(){
-
-}
-
 //从合约中获取碎片
-func getFragment(order int64, user *big.Int) (string, error){
-
-	rawClient, _ := ethclient.Dial(rawurl)
-	ctx := context.Background()
-
-	addr := common.HexToAddress(ContractAddr)
-	trader, _ := stub.NewTradeCaller(addr, rawClient)
+func (t *TrusteeNode) getFragment(order int64, user *big.Int) (string, error){
 
 	from := common.HexToAddress(trusteeAddr)
 
 	opts := &bind.CallOpts{
 		Pending: true,
 		From: from,
-		Context: ctx,
+		Context: t.contractClient.ctx,
 	}
 
-	str, err := trader.GetSecret(opts, big.NewInt(order), from, user)
+	str, err := t.contractClient.trader.GetSecret(opts, big.NewInt(order), from, user)
 	if err != nil{
 		return "", nil
 	}
-
 	return str, nil
 }
 
 //订单胜者
-func getWinner(order int64) (*big.Int, error){
+func (t *TrusteeNode) getWinner(order int64) (*big.Int, error){
 
-	rawClient, _ := ethclient.Dial(rawurl)
-	ctx := context.Background()
-
-	addr := common.HexToAddress(ContractAddr)
-	trader, _ := stub.NewTradeCaller(addr, rawClient)
 
 	from := common.HexToAddress(trusteeAddr)
 
 	opts := &bind.CallOpts{
 		Pending: true,
 		From: from,
-		Context: ctx,
+		Context: t.contractClient.ctx,
 	}
 
-	winner, err := trader.GetWinner(opts, big.NewInt(order))
+	winner, err := t.contractClient.trader.GetWinner(opts, big.NewInt(order))
 	if err != nil{
 		return nil, err
 	}
 
 	return winner, nil
+}
+
+func getContractClient() (*ContractClient, error){
+	rawClient, err := ethclient.Dial(rawurl)
+	if err != nil {
+		return nil, err
+	}
+
+	c := context.Background()
+
+	addr := common.HexToAddress(ContractAddr)
+	t, err := stub.NewTradeCaller(addr, rawClient)
+	if err != nil {
+		return nil, err
+	}
+
+	contractClient := &ContractClient{
+		rawClient: rawClient,
+		ctx: c,
+		trader: t,
+	}
+	return contractClient, nil
 }

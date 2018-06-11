@@ -18,7 +18,7 @@ type TrusteeNode struct{
 
 	secrets map[int64]string //解密后的密钥碎片
 
-	abitrateEvents chan AbitrateEvent
+	arbitrateEvents chan ArbitrateEvent
 
 	orderWinner map[int64]*big.Int
 
@@ -27,16 +27,18 @@ type TrusteeNode struct{
 	config Config
 
 	privKey keystore.Key
+
+	contractClient *ContractClient
 }
 
-type AbitrateEvent struct{
+type ArbitrateEvent struct{
 	orderId string
 	winner string
 }
 
 func New(c Config) (t *TrusteeNode){
 
-	//todo 读取密码
+	//todo read pw
 	var pass string = "123456"
 
 	blob1, err := ioutil.ReadFile(c.DataDir)
@@ -47,7 +49,12 @@ func New(c Config) (t *TrusteeNode){
 
 	privKey, err:= keystore.DecryptKey(blob1, pass)
 	if err != nil {
+		log.Fatal("failed to DecryptKey: %v", err)
+	}
 
+	contractClient, err := getContractClient()
+	if err != nil {
+		log.Fatal("failed to get contractClient")
 	}
 
 	var trustee = &TrusteeNode{
@@ -56,6 +63,7 @@ func New(c Config) (t *TrusteeNode){
 		config : c,
 		stop: make(chan struct{}),
 		privKey: *privKey,
+		contractClient: contractClient,
 		}
 	return trustee
 }
