@@ -143,14 +143,13 @@ func (t *TrusteeNode) getFragment(order int64, user *big.Int) (string, error){
 	return str, nil
 }
 
-//订单胜者
+//获取订单仲裁结果
 func (t *TrusteeNode) getWinner(order int64) (*big.Int, error){
-
 
 	from := common.HexToAddress(trusteeAddr)
 
 	opts := &bind.CallOpts{
-		Pending: true,
+		Pending: false,
 		From: from,
 		Context: t.contractClient.ctx,
 	}
