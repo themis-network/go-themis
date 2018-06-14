@@ -9,4 +9,6 @@ type Config struct {
 	// in memory.
 	DataDir string
 
+	Endpoint string
+
 }

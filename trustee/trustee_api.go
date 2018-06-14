@@ -12,7 +12,6 @@ var(
 	modules = []string{"trustee"}
 	cors = []string{"*"}
 	vhosts = []string{"*"}
-	endpoint = "127.0.0.1:8089"
 )
 
 // PublicWeb3API offers helper utils
@@ -39,7 +38,7 @@ func (t *TrusteeNode) startApiServer(){
 		},
 	}
 
-	rpc.StartHTTPEndpoint(endpoint, apis, modules, cors, vhosts)
+	rpc.StartHTTPEndpoint(t.config.Endpoint, apis, modules, cors, vhosts)
 }
 
 // NewPublicWeb3API creates a new Web3Service instance
