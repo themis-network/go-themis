@@ -11,7 +11,7 @@ import (
 var(
 	modules = []string{"trustee"}
 	cors = []string{"*"}
-	vhosts = []string{"localhost"}
+	vhosts = []string{"*"}
 	endpoint = "127.0.0.1:8089"
 )
 
