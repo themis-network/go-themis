@@ -54,11 +54,11 @@ func NewTrusteeAPI(t *TrusteeNode) *TrusteeAPI {
 1. verify the order's arbitrate result
 2. try get decrypt fragment from map. if fail, get the fragment from contract, then decrypt it
  */
-func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
-	log.Println("GetDecryptSecret, orderId:", orderId)
+func (t *TrusteeAPI) GetDecryptSecret(orderId int64) (string, error){
+	log.Println("Request trustee_getDecryptSecret, orderId:", orderId)
 
 	if v, ok := t.trusteeNode.secrets[orderId]; ok {
-		return v
+		return v, nil
 	}
 
 	var winner *big.Int
@@ -68,14 +68,16 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
 		w, err := t.trusteeNode.getWinner(orderId)
 		if err != nil {
 			winner = nil
+			log.Println("get winner err")
 		}else {
 			winner = w
 		}
 	}
 
-	if winner == nil{
+	if winner == nil || winner.Int64() == 0{
 		//没有仲裁的winner，返回JSON
-		return errorJson(-1, "This order has no winner") //byte[]转换成string 输出
+		log.Println("no winner error, orderid: ", orderId)
+		return "", &noWinnerError{"no winner error"}
 	}
 
 	log.Println("winner is: ", winner.Int64())
@@ -85,11 +87,12 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) string {
 	decSectet, err:= t.trusteeNode.decrypt(sectet)
 
 	if err != nil {
-		log.Println("decrypt secret error: ", err)
-		//todo return error
+		log.Println("decrypt secret error, ", err)
+		return "", &decryptError{fmt.Sprintf("decrypt secret error, %v", err)}
 	}
-	return decSectet
+	return decSectet, nil
 }
+
 
 func errorJson(code int, message string) string{
 	errorJson := &jsonError{Code: code, Message: message}
