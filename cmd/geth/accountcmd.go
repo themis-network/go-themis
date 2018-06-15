@@ -32,7 +32,7 @@ import (
 var (
 	walletCommand = cli.Command{
 		Name:      "wallet",
-		Usage:     "Manage Ethereum presale wallets",
+		Usage:     "Manage Themis presale wallets",
 		ArgsUsage: "",
 		Category:  "ACCOUNT COMMANDS",
 		Description: `
