@@ -333,6 +333,18 @@ func DefaultRinkebyGenesisBlock() *Genesis {
 	}
 }
 
+// DefalutThemisTestnetGenesisBlock returns the Themis test network genesis block.
+func DefalutThemisTestnetGenesisBlock() *Genesis {
+	return &Genesis{
+		Config: params.ThemisTestChainConfig,
+		Timestamp: 1523257643,
+		ExtraData: hexutil.MustDecode("0x00000000000000000000000000000000000000000000000000000000000000001efb4ce0ae22a272a636cd015d276080db953eac57fcf5127a02f96f5f16d0047ee40d01574994e960db7637178959194109b0254ea79fc0d1ebb24f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+		GasLimit: 4700000,
+		Difficulty: big.NewInt(1),
+		Alloc: decodePrealloc(themisTestnetAllocData),
+	}
+}
+
 // DeveloperGenesisBlock returns the 'geth --dev' genesis block. Note, this must
 // be seeded with the
 func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {

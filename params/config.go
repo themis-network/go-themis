@@ -76,6 +76,21 @@ var (
 			Epoch:  30000,
 		},
 	}
+	
+	// ThemisTestChainConfig contains the chain parameters to run a node on the Themis test network.
+	ThemisTestChainConfig = &ChainConfig{
+		ChainId: big.NewInt(1111),
+		HomesteadBlock:      big.NewInt(1),
+		EIP150Block:         big.NewInt(2),
+		EIP150Hash: common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		EIP155Block:         big.NewInt(3),
+		EIP158Block:         big.NewInt(3),
+		ByzantiumBlock:      big.NewInt(4),
+		Clique: &CliqueConfig{
+			Period: 3,
+			Epoch:  30000,
+		},
+	}
 
 	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Ethash consensus.
