@@ -86,7 +86,6 @@ func (t *TrusteeNode) monitor(){
 			t.processLog(eventLog)
 		}
 	}
-	log.Println("finish monitor")
 }
 
 /**
@@ -107,12 +106,12 @@ func (t *TrusteeNode)processLog(eventLog types.Log){
 
 		secret, err := t.getFragment(orderId, winner)
 		if err != nil {
-			log.Println("Error, getFragment error: %v", err)
+			log.Println("Error, getFragment error: ", err)
 		}
 
 		decrypt, err := t.decrypt(secret)
 		if err != nil {
-			log.Println("Error, Decrypt error: %v", err)
+			log.Println("Error, Decrypt error: ", err)
 		}
 
 		t.secrets[orderId] = decrypt
