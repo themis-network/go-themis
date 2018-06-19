@@ -11,10 +11,10 @@
 GOBIN = $(shell pwd)/build/bin
 GO ?= latest
 
-geth:
-	build/env.sh go run build/ci.go install ./cmd/geth
+gthemis:
+	build/env.sh go run build/ci.go install ./cmd/gthemis
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/geth\" to launch geth."
+	@echo "Run \"$(GOBIN)/gthemis\" to launch gthemis."
 
 gtrustee:
 	build/env.sh go run build/ci.go install ./cmd/gtrustee
