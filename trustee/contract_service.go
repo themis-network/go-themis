@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	ContractAddr  = "AAa91587531b304B117e367bBAb75ecD9B77cE15" //greet
-	trusteeAddr = "3cbcd06204c1df807f942f9edab069934fc14140"
+	ContractAddr  = "AAa91587531b304B117e367bBAb75ecD9B77cE15" //trade contract address
+	trusteeAddr = "3cbcd06204c1df807f942f9edab069934fc14140" //trustee's address
 	rawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
 	uploadSecretTopic = ""

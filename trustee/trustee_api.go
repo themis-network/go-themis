@@ -49,7 +49,7 @@ func NewTrusteeAPI(t *TrusteeNode) *TrusteeAPI {
 }
 
 /**
- 获取解密密钥碎片接口, RPC "method":"trustee_getDecryptSecret"
+ GetDecryptSecret API, RPC "method":"trustee_getDecryptSecret"
 1. verify the order's arbitrate result
 2. try get decrypt fragment from map. if fail, get the fragment from contract, then decrypt it
  */
@@ -67,14 +67,14 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) (string, error){
 		w, err := t.trusteeNode.getWinner(orderId)
 		if err != nil {
 			winner = nil
-			log.Println("get winner err")
+			log.Println("get winner error")
 		}else {
 			winner = w
 		}
 	}
 
 	if winner == nil || winner.Int64() == 0{
-		//没有仲裁的winner，返回JSON
+		//no winner error
 		log.Println("no winner error, orderid: ", orderId)
 		return "", &noWinnerError{"no winner error"}
 	}
@@ -95,10 +95,10 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) (string, error){
 
 func errorJson(code int, message string) string{
 	errorJson := &jsonError{Code: code, Message: message}
-	jsons, errs := json.Marshal(errorJson) //转换成JSON返回的是byte[]
+	jsons, errs := json.Marshal(errorJson)
 	if errs != nil {
 		fmt.Println(errs.Error())
 		return ""
 	}
-	return string(jsons) //byte[]转换成string 输出
+	return string(jsons)
 }

@@ -16,9 +16,12 @@ var(
 	wg sync.WaitGroup
 )
 
+/**
+	Trustee node service, response for secret decrypt request
+ */
 type TrusteeNode struct{
 
-	secrets map[int64]string //每个订单对应的解密后的密钥碎片
+	secrets map[int64]string //order:secret
 
 	arbitrateEvents chan ArbitrateEvent
 
@@ -26,9 +29,9 @@ type TrusteeNode struct{
 
 	stop chan struct{} //Channel to wait for termination notifications
 
-	config Config
+	config Config //TrusteeNode config
 
-	privKey keystore.Key
+	privKey keystore.Key //trustee node's private key
 
 	contractClient *ContractClient
 }
@@ -38,29 +41,32 @@ type ArbitrateEvent struct{
 	winner string
 }
 
+//return new trustee instance
 func New(c Config) (t *TrusteeNode){
-
 	//var pass string = "123456"
 	var pass string
 
-	fmt.Printf("Enter masked password: ")
-	maskedPassword, _ := gopass.GetPasswdMasked() // Masked
+	fmt.Printf("Enter keystore password: ")
+	maskedPassword, err := gopass.GetPasswdMasked() // Masked
+	if err != nil {
+		log.Fatal("readPassword error: ", err)
+	}
 	pass = string(maskedPassword)
 
-	blob1, err := ioutil.ReadFile(c.DataDir)
+	keyStoreBlob, err := ioutil.ReadFile(c.DataDir)
 	if err != nil {
-		log.Fatal("failed to read freshly persisted node key: ", err)
+		log.Fatal("failed to read keystore file: ", err)
 	}
 	log.Println("loaded keystore file...")
 
-	privKey, err:= keystore.DecryptKey(blob1, pass)
+	privKey, err:= keystore.DecryptKey(keyStoreBlob, pass)
 	if err != nil {
 		log.Fatal("failed to DecryptKey: ", err)
 	}
 
 	contractClient, err := getContractClient()
 	if err != nil {
-		log.Fatal("failed to get contractClient")
+		log.Fatal("failed to get contractClient: ", err)
 	}
 
 	var trustee = &TrusteeNode{
@@ -74,7 +80,7 @@ func New(c Config) (t *TrusteeNode){
 	return trustee
 }
 
-//启动服务
+//start TrusteeNode service
 func (t *TrusteeNode) Start(){
 
 	t.startApiServer()
@@ -83,23 +89,25 @@ func (t *TrusteeNode) Start(){
 	t.wait()
 }
 
+//wait for TrusteeNode service stop
 func (t *TrusteeNode) wait(){
 	<- t.stop
 }
 
+//stop TrusteeNode service
 func (t *TrusteeNode) Stop(){
 
 }
 
 
-//解密托管密钥
+//decrypt secret hold by trustee
 func  (t *TrusteeNode) decrypt(secret string) (string, error){
 
 	priv := ecies.ImportECDSA(t.privKey.PrivateKey)
 
 	//字符转成字节数组
-	bytesSercret, _ := hex.DecodeString(secret)
-	rawMsg, err := priv.Decrypt(bytesSercret, nil, nil)
+	bytesSecret, _ := hex.DecodeString(secret)
+	rawMsg, err := priv.Decrypt(bytesSecret, nil, nil)
 	if err != nil {
 		return "", err
 	}
