@@ -67,6 +67,11 @@ var (
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
 )
 
+var (
+	FrontierBlockReward             = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
+	ByzantiumBlockReward            = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+)
+
 // Various error messages to mark blocks invalid. These should be private to
 // prevent engine specific errors from being referenced in the remainder of the
 // codebase, inherently breaking if the engine is swapped out. Please put common
@@ -570,7 +575,13 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given, and returns the final block.
 func (c *Clique) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
-	// No block rewards in PoA, so the state remains as is and uncles are dropped
+	// Accumulate any block rewards and commit the final state root
+	// Try to get block signer from the block header. Otherwise use clique singer(on mining)
+	signer, err := ecrecover(header, c.signatures)
+	if err != nil {
+		signer = c.signer
+	}
+	accumulateRewards(chain.Config(), state, header, signer)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = types.CalcUncleHash(nil)
 
@@ -682,4 +693,17 @@ func (c *Clique) APIs(chain consensus.ChainReader) []rpc.API {
 		Service:   &API{chain: chain, clique: c},
 		Public:    false,
 	}}
+}
+
+// AccumulateRewards credits the coinbase of the given block with the mining
+// reward. The total reward consists of the static block reward.
+func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, signer common.Address) {
+	// Select the correct block reward based on chain progression
+	blockReward := FrontierBlockReward
+	if config.IsByzantium(header.Number) {
+		blockReward = ByzantiumBlockReward
+	}
+	// Accumulate the rewards for the signer
+	reward := new(big.Int).Set(blockReward)
+	state.AddBalance(signer, reward)
 }
