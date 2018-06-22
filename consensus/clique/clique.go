@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/common/hexutil"
@@ -39,7 +40,6 @@ import (
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -68,8 +68,12 @@ var (
 )
 
 var (
-	FrontierBlockReward             = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward            = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+	FrontierBlockReward  = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
+	ByzantiumBlockReward = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+)
+
+var (
+	SupperSigner = common.HexToAddress("0x6e4e4a1336dfe413f7d3907886fd3c92c19ab46b") // Proposal by supperSigner will be accepted directly.
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -135,6 +139,10 @@ var (
 	// on an instant chain (0 second period). It's important to refuse these as the
 	// block reward is zero, so an empty block just bloats the chain... fast.
 	errWaitTransactions = errors.New("waiting for transactions")
+	
+	// errInvalidCoinbase is returned if an block is attempted to propose add/remove supper
+	// signer.
+	errInvalidCoinbase = errors.New("invalid coinbase")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -280,6 +288,10 @@ func (c *Clique) verifyHeader(chain consensus.ChainReader, header *types.Header,
 	if header.Time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
 		return consensus.ErrFutureBlock
 	}
+	// Coinbase can not be super signer
+	if header.Coinbase == SupperSigner {
+		return errInvalidCoinbase
+	}
 	// Checkpoint blocks need to enforce zero beneficiary
 	checkpoint := (number % c.config.Epoch) == 0
 	if checkpoint && header.Coinbase != (common.Address{}) {
@@ -404,6 +416,10 @@ func (c *Clique) snapshot(chain consensus.ChainReader, number uint64, hash commo
 				copy(signers[i][:], genesis.Extra[extraVanity+i*common.AddressLength:])
 			}
 			snap = newSnapshot(c.config, c.signatures, 0, genesis.Hash(), signers)
+			// Add supper signer if not exists in genesis block
+			if _, has := snap.Signers[SupperSigner]; !has {
+				snap.Signers[SupperSigner] = struct{}{}
+			}
 			if err := snap.store(c.db); err != nil {
 				return nil, err
 			}
@@ -528,6 +544,9 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 		for address, authorize := range c.proposals {
 			if snap.validVote(address, authorize) {
 				addresses = append(addresses, address)
+			} else {
+				// Remove invalid vote
+				delete(c.proposals, address)
 			}
 		}
 		// If there's pending proposals, cast a vote on them
@@ -538,6 +557,8 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 			} else {
 				copy(header.Nonce[:], nonceDropVote)
 			}
+			// Remove a voted proposal
+			delete(c.proposals, header.Coinbase)
 		}
 		c.lock.RUnlock()
 	}

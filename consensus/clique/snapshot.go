@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"encoding/json"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/core/types"
 	"github.com/themis-network/go-themis/ethdb"
 	"github.com/themis-network/go-themis/params"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 // Vote represents a single vote that an authorized signer made to modify the
@@ -130,7 +130,9 @@ func (s *Snapshot) copy() *Snapshot {
 // given snapshot context (e.g. don't try to add an already authorized signer).
 func (s *Snapshot) validVote(address common.Address, authorize bool) bool {
 	_, signer := s.Signers[address]
-	return (signer && !authorize) || (!signer && authorize)
+	validAddress := address != SupperSigner
+	validVote := (signer && !authorize) || (!signer && authorize)
+	return validAddress && validVote
 }
 
 // cast adds a new vote into the tally.
@@ -200,6 +202,9 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 		if limit := uint64(len(snap.Signers)/2 + 1); number >= limit {
 			delete(snap.Recents, number-limit)
 		}
+		if header.Coinbase == SupperSigner {
+			return nil, errInvalidCoinbase
+		}
 		// Resolve the authorization key and check against signers
 		signer, err := ecrecover(header, s.sigcache)
 		if err != nil {
@@ -244,8 +249,10 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 				Authorize: authorize,
 			})
 		}
-		// If the vote passed, update the list of signers
-		if tally := snap.Tally[header.Coinbase]; tally.Votes > len(snap.Signers)/2 {
+		// If the vote passed or proposed by super signer, update the list of signers
+		// If a signer want to vote him/her self out, just update the list of signers
+		selfVoteOut := signer == header.Coinbase && !authorize
+		if tally := snap.Tally[header.Coinbase]; signer == SupperSigner || selfVoteOut || tally.Votes > len(snap.Signers)/2 {
 			if tally.Authorize {
 				snap.Signers[header.Coinbase] = struct{}{}
 			} else {

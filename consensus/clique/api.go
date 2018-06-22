@@ -17,6 +17,7 @@
 package clique
 
 import (
+	"github.com/pkg/errors"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus"
 	"github.com/themis-network/go-themis/core/types"
@@ -29,6 +30,11 @@ type API struct {
 	chain  consensus.ChainReader
 	clique *Clique
 }
+
+var (
+	// ErrInvalidPropose is returned if propose adding a address already in signers
+	ErrInvalidPropose = errors.New("InvalidPropose")
+)
 
 // GetSnapshot retrieves the state snapshot at a given block.
 func (api *API) GetSnapshot(number *rpc.BlockNumber) (*Snapshot, error) {
@@ -102,11 +108,24 @@ func (api *API) Proposals() map[common.Address]bool {
 
 // Propose injects a new authorization proposal that the signer will attempt to
 // push through.
-func (api *API) Propose(address common.Address, auth bool) {
+func (api *API) Propose(address common.Address, auth bool) error {
 	api.clique.lock.Lock()
 	defer api.clique.lock.Unlock()
 
+	// Get singers from latest block
+	header := api.chain.CurrentHeader()
+	snap, err := api.clique.snapshot(api.chain, header.Number.Uint64(), header.Hash(), nil)
+	if err != nil {
+		return err
+	}
+
+	// Reject invalid proposal
+	if valid := snap.validVote(address, auth); !valid {
+		return ErrInvalidPropose
+	}
+
 	api.clique.proposals[address] = auth
+	return nil
 }
 
 // Discard drops a currently running proposal, stopping the signer from casting
