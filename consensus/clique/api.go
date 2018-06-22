@@ -33,6 +33,7 @@ type API struct {
 
 var (
 	// ErrInvalidPropose is returned if propose adding a address already in signers
+	// , remove a address not in signers or propose address of supper signer
 	ErrInvalidPropose = errors.New("InvalidPropose")
 )
 
