@@ -50,7 +50,7 @@ var RinkebyBootnodes = []string{
 // ThemisTestnetBootnodes are the enode URLS of the P2P bootstrap nodes running on the
 // Themis test network.
 var ThemisTestnetBootnodes = []string{
-	"enode://668b82f3677dcd56962e60173a28ee31ca57cb7366c4c08487f981a0dcce3cfd15f0b142024f48530d256a57afc84bc8a045ef9c88898ad3fc12f9e3e52b0529@172.16.103.38:30304",
+	"enode://668b82f3677dcd56962e60173a28ee31ca57cb7366c4c08487f981a0dcce3cfd15f0b142024f48530d256a57afc84bc8a045ef9c88898ad3fc12f9e3e52b0529@103.14.34.124:30303",
 }
 
 // DiscoveryV5Bootnodes are the enode URLs of the P2P bootstrap nodes for the
