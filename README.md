@@ -58,8 +58,8 @@ This command will:
 ### Full miner node on the test Themis network
 
 You have to run a node in full sync mode to be a miner/signer. We will init some signers
-in genesis block, and anyone of signer can propose adding a new signer. The propose
-will be accepted if N/2 + 1 signers vote for it.(N is the total amount of signers)
+in genesis block, and any signer can propose adding a new signer or removing an old signer.
+The propose will be accepted if N/2 + 1 signers vote for it.(N is the total amount of signers)
 to start a signer/node:
 
 ```
@@ -80,11 +80,11 @@ over between the main network and test network, you should make sure to always u
 for play-money and real-money. Unless you manually move accounts, Gthemis will by default correctly
 separate the two networks and will not make any accounts available between them.* 
 
-**Note: please understand your signer account is always unlock while signing/mining and don't open 
+**Note: please understand your signer account is always unlocked while signing/mining and don't open 
 any rpc/ws based service on it. Hackers on the internet can steal your money through
-this un security service very simple!**
+this un security service very simply!**
 
-Any signer can propose add/remove a signer(include his/her self), to do so, you have to start Gthemis's
+Any signer can propose adding/removing a signer(include his/her self), to do so, you have to start Gthemis's
 built-in interactive JavaScript console:
 
 Propose adding a new signer:
@@ -97,27 +97,27 @@ Propose removing a old signer:
 $ clique.propose(oldSigner, false)
 ```
 
-Get signers at a certain block(current number will be used when number is omitted):
+Get signers at a certain block(latest block number will be used if number is omitted):
 ```
 $ clique.getSigners(blockNumber) // blockNumber should be a hex string(e.g. "0x0")
 ```
 
 Discard a propose(Any invalid propose will be discarded automatically, as well as those have been signed into a block.
-So it will only be used before a valid propose been signed)
+So this will only be used before a valid propose been signed)
 ```
 $ clique.discard(signer)
 ```
 
-Get current vote details:
+Get current vote details(latest block number will be used if number is omitted):
 ```
 $ clique.getSnapshot(blockNumber) // blockNumber should be a hex string(e.g. "0x0")
 ```
 
-For more details, you can go through the javascript console!
+For more details, you can deep into the javascript console!
 
-*Note: Adding an existing signer or Removing a non-existing signer is invalid, thus will be rejected.
-More, there is a super signer hard coded on this themis test net, who can add/remove signer separately.
-Any propose about super signer is regarded as invalid.*
+*Note: Adding an existing signer or removing a non-existing signer is invalid, thus will be rejected.
+More, there is a super signer hard coded in this themis test net, who can add/remove signer separately
+(vote is not necessary). Any propose about super signer is regarded as invalid.*
 
 ### Configuration
 
