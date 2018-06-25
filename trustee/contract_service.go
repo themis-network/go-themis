@@ -17,9 +17,10 @@ import (
 const (
 	ContractAddr  = "AAa91587531b304B117e367bBAb75ecD9B77cE15" //trade contract address
 	trusteeAddr = "3cbcd06204c1df807f942f9edab069934fc14140" //trustee's address
-	rawurl = "ws://192.168.1.213:8546"
+	testRawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
 	uploadSecretTopic = ""
+	nodeProtocol = "ws://"
 )
 
 var(
@@ -37,13 +38,14 @@ type ContractClient struct{
 }
 
 
-func getClient() (*ethclient.Client, error){
-	client, _ := ethclient.Dial(rawurl)
+func getClient(nodeEndpoint string) (*ethclient.Client, error){
+	nodeWsUrl := nodeProtocol + nodeEndpoint
+	client, _ := ethclient.Dial(nodeWsUrl)
 	return client, nil
 }
 
 func GetContractData(){
-	client, _ := getClient()
+	client, _ := getClient("")
 	ctx := context.Background()
 	hash := common.BigToHash(big.NewInt(1))
 	x, _ := client.StorageAt(ctx, contractAddress, hash, nil)
@@ -57,7 +59,7 @@ func (t *TrusteeNode) monitor(){
 	ctx := context.Background()
 	contractAddress := common.HexToAddress(ContractAddr)
 
-	rawClient, _ := getClient()
+	rawClient, _ := getClient(t.config.Nodes)
 
 	query := ethereum.FilterQuery{
 		//FromBlock: big.NewInt(1431798),
@@ -161,8 +163,10 @@ func (t *TrusteeNode) getWinner(order int64) (*big.Int, error){
 	return winner, nil
 }
 
-func getContractClient() (*ContractClient, error){
-	rawClient, err := ethclient.Dial(rawurl)
+func getContractClient(nodeEndpoint string) (*ContractClient, error){
+
+	nodeWsUrl := nodeProtocol + nodeEndpoint
+	rawClient, err := ethclient.Dial(nodeWsUrl)
 	if err != nil {
 		return nil, err
 	}

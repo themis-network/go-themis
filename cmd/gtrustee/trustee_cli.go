@@ -19,6 +19,10 @@ var(
 		Name:  "endpoint",
 		Usage: "ip:port, eg. 192.168.1.102:8090",
 	}
+	nodesFlag = cli.StringFlag{
+		Name:  "nodes",
+		Usage: "full node ws endpoint, ip:port, eg. 192.168.1.102:8090",
+	}
 )
 
 func init(){
@@ -30,6 +34,7 @@ func init(){
 	flags := []cli.Flag{
 		dataDirFlag,
 		endpointFlag,
+		nodesFlag,
 	}
 	app.Flags = append(app.Flags, flags...)
 }
@@ -43,6 +48,7 @@ func gtrustee(ctx *cli.Context){
 	config := trustee.Config{
 		DataDir: ctx.GlobalString(dataDirFlag.Name),
 		Endpoint: ctx.GlobalString(endpointFlag.Name),
+		Nodes: ctx.GlobalString(nodesFlag.Name),
 	}
 
 	var trusteeServer = trustee.New(config)

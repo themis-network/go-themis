@@ -11,4 +11,6 @@ type Config struct {
 
 	Endpoint string
 
+	Nodes string
+
 }

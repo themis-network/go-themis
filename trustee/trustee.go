@@ -64,7 +64,7 @@ func New(c Config) (t *TrusteeNode){
 		log.Fatal("failed to DecryptKey: ", err)
 	}
 
-	contractClient, err := getContractClient()
+	contractClient, err := getContractClient(c.Nodes)
 	if err != nil {
 		log.Fatal("failed to get contractClient: ", err)
 	}
