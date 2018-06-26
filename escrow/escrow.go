@@ -1,4 +1,4 @@
-package trustee
+package escrow
 
 import (
 	"sync"
@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"fmt"
-	"github.com/themis-network/go-themis/trustee/gopass"
+	"github.com/themis-network/go-themis/escrow/gopass"
 )
 
 var(
@@ -17,9 +17,9 @@ var(
 )
 
 /**
-	Trustee node service, response for secret decrypt request
+	Escrow node service, response for secret decrypt request
  */
-type TrusteeNode struct{
+type EscrowNode struct{
 
 	secrets map[int64]string //order:secret
 
@@ -29,9 +29,9 @@ type TrusteeNode struct{
 
 	stop chan struct{} //Channel to wait for termination notifications
 
-	config Config //TrusteeNode config
+	config Config //EscrowNode config
 
-	privKey keystore.Key //trustee node's private key
+	privKey keystore.Key //EscrowNode's private key
 
 	contractClient *ContractClient
 }
@@ -41,8 +41,8 @@ type ArbitrateEvent struct{
 	winner string
 }
 
-//return new trustee instance
-func New(c Config) (t *TrusteeNode){
+//return new EscrowNode instance
+func New(c Config) (t *EscrowNode){
 	//var pass string = "123456"
 	var pass string
 
@@ -69,7 +69,7 @@ func New(c Config) (t *TrusteeNode){
 		log.Fatal("failed to get contractClient: ", err)
 	}
 
-	var trustee = &TrusteeNode{
+	var escrow = &EscrowNode{
 		secrets : make(map[int64]string),
 		orderWinner : make(map[int64]*big.Int),
 		config : c,
@@ -77,11 +77,11 @@ func New(c Config) (t *TrusteeNode){
 		privKey: *privKey,
 		contractClient: contractClient,
 		}
-	return trustee
+	return escrow
 }
 
-//start TrusteeNode service
-func (t *TrusteeNode) Start(){
+//start escrow service
+func (t *EscrowNode) Start(){
 
 	t.startApiServer()
 	t.monitor()
@@ -89,19 +89,19 @@ func (t *TrusteeNode) Start(){
 	t.wait()
 }
 
-//wait for TrusteeNode service stop
-func (t *TrusteeNode) wait(){
+//wait for escrow service stop
+func (t *EscrowNode) wait(){
 	<- t.stop
 }
 
-//stop TrusteeNode service
-func (t *TrusteeNode) Stop(){
+//stop escrow service
+func (t *EscrowNode) Stop(){
 
 }
 
 
-//decrypt secret hold by trustee
-func  (t *TrusteeNode) decrypt(secret string) (string, error){
+//decrypt secret hold by escrow
+func  (t *EscrowNode) decrypt(secret string) (string, error){
 
 	priv := ecies.ImportECDSA(t.privKey.PrivateKey)
 

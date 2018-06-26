@@ -1,4 +1,4 @@
-package trustee
+package escrow
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 )
 
 var(
-	modules = []string{"trustee"}
+	modules = []string{"escrow"}
 	cors = []string{"*"}
 	vhosts = []string{"*"}
 )
 
 // PublicWeb3API offers helper utils
-type TrusteeAPI struct {
-	trusteeNode *TrusteeNode
+type EscrowAPI struct {
+	escrowNode *EscrowNode
 }
 
 type jsonError struct {
@@ -25,15 +25,15 @@ type jsonError struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func (t *TrusteeNode) startApiServer(){
+func (t *EscrowNode) startApiServer(){
 
-	log.Println("Start Trustee api service...")
+	log.Println("Start Escrow api service...")
 
 	apis := []rpc.API{
 		{
-			Namespace: "trustee",
+			Namespace: "escrow",
 			Version:   "1.0",
-			Service:   NewTrusteeAPI(t),
+			Service:   NewEscrowAPI(t),
 			Public:    true,
 		},
 	}
@@ -42,29 +42,29 @@ func (t *TrusteeNode) startApiServer(){
 }
 
 // NewPublicWeb3API creates a new Web3Service instance
-func NewTrusteeAPI(t *TrusteeNode) *TrusteeAPI {
-	return &TrusteeAPI{
-		trusteeNode: t,
+func NewEscrowAPI(t *EscrowNode) *EscrowAPI {
+	return &EscrowAPI{
+		escrowNode: t,
 	}
 }
 
 /**
- GetDecryptSecret API, RPC "method":"trustee_getDecryptSecret"
+ GetDecryptSecret API, RPC "method":"escrow_getDecryptSecret"
 1. verify the order's arbitrate result
 2. try get decrypt fragment from map. if fail, get the fragment from contract, then decrypt it
  */
-func (t *TrusteeAPI) GetDecryptSecret(orderId int64) (string, error){
-	log.Println("Request trustee_getDecryptSecret, orderId:", orderId)
+func (t *EscrowAPI) GetDecryptSecret(orderId int64) (string, error){
+	log.Println("Request escrow_getDecryptSecret, orderId:", orderId)
 
-	if v, ok := t.trusteeNode.secrets[orderId]; ok {
+	if v, ok := t.escrowNode.secrets[orderId]; ok {
 		return v, nil
 	}
 
 	var winner *big.Int
-	if v, ok := t.trusteeNode.orderWinner[orderId]; ok {
+	if v, ok := t.escrowNode.orderWinner[orderId]; ok {
 		winner = v
 	}else {
-		w, err := t.trusteeNode.getWinner(orderId)
+		w, err := t.escrowNode.getWinner(orderId)
 		if err != nil {
 			winner = nil
 			log.Println("get winner error")
@@ -81,9 +81,9 @@ func (t *TrusteeAPI) GetDecryptSecret(orderId int64) (string, error){
 
 	log.Println("winner is: ", winner.Int64())
 
-	sectet, err := t.trusteeNode.getFragment(orderId, winner)
+	sectet, err := t.escrowNode.getFragment(orderId, winner)
 	log.Println("secret from contract: ", sectet)
-	decSectet, err:= t.trusteeNode.decrypt(sectet)
+	decSectet, err:= t.escrowNode.decrypt(sectet)
 
 	if err != nil {
 		log.Println("decrypt secret error, ", err)

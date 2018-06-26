@@ -1,4 +1,4 @@
-package trustee
+package escrow
 
 type Config struct {
 

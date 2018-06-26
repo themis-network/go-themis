@@ -1,4 +1,4 @@
-package trustee
+package escrow
 
 import (
 	"math/big"
@@ -16,7 +16,7 @@ import (
 
 const (
 	ContractAddr  = "AAa91587531b304B117e367bBAb75ecD9B77cE15" //trade contract address
-	trusteeAddr = "3cbcd06204c1df807f942f9edab069934fc14140" //trustee's address
+	escrowAddr = "3cbcd06204c1df807f942f9edab069934fc14140" //escrow's address
 	testRawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
 	uploadSecretTopic = ""
@@ -28,7 +28,7 @@ var(
 )
 
 type Monitor struct{
-	trustee TrusteeNode
+	escrow EscrowNode
 }
 
 type ContractClient struct{
@@ -52,7 +52,7 @@ func GetContractData(){
 	fmt.Println(x)
 }
 
-func (t *TrusteeNode) monitor(){
+func (t *EscrowNode) monitor(){
 
 	log.Println("start monitor")
 
@@ -93,7 +93,7 @@ func (t *TrusteeNode) monitor(){
 /**
  process receive event from contract
  */
-func (t *TrusteeNode)processLog(eventLog types.Log){
+func (t *EscrowNode)processLog(eventLog types.Log){
 
 	topic := eventLog.Topics[0].Hex()
 
@@ -127,9 +127,9 @@ func BytesToInt64(buf []byte) int64 {
 }
 
 //从合约中获取碎片
-func (t *TrusteeNode) getFragment(order int64, user *big.Int) (string, error){
+func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
 
-	from := common.HexToAddress(trusteeAddr)
+	from := common.HexToAddress(escrowAddr)
 
 	opts := &bind.CallOpts{
 		Pending: true,
@@ -145,9 +145,9 @@ func (t *TrusteeNode) getFragment(order int64, user *big.Int) (string, error){
 }
 
 //获取订单仲裁结果
-func (t *TrusteeNode) getWinner(order int64) (*big.Int, error){
+func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
 
-	from := common.HexToAddress(trusteeAddr)
+	from := common.HexToAddress(escrowAddr)
 
 	opts := &bind.CallOpts{
 		Pending: false,

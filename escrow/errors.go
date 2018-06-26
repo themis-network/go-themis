@@ -1,4 +1,4 @@
-package trustee
+package escrow
 
 const (
 	//NO_WINNER = -1

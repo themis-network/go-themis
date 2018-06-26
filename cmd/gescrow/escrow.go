@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/themis-network/go-themis/trustee"
 	"log"
 	"gopkg.in/urfave/cli.v1"
 	"os"
 	"fmt"
+	"github.com/themis-network/go-themis/escrow"
 )
 
 var(
@@ -13,7 +13,7 @@ var(
 
 	dataDirFlag = cli.StringFlag{
 		Name:  "datadir",
-		Usage: "Data directory for keystore",
+		Usage: "directory for keystore",
 	}
 	endpointFlag = cli.StringFlag{
 		Name:  "endpoint",
@@ -26,11 +26,11 @@ var(
 )
 
 func init(){
-	app.Name = "Trustee service"
-	app.Usage = "gtrustee [options]"
+	app.Name = "Escrow service"
+	app.Usage = "Escrow [options]"
 	app.Copyright = "Copyright 2017-2018 The go-themis Authors"
 	app.Version = "0.5.1"
-	app.Action = gtrustee
+	app.Action = escrow_start
 	flags := []cli.Flag{
 		dataDirFlag,
 		endpointFlag,
@@ -39,20 +39,20 @@ func init(){
 	app.Flags = append(app.Flags, flags...)
 }
 
-func gtrustee(ctx *cli.Context){
+func escrow_start(ctx *cli.Context){
 
 	if !ctx.GlobalIsSet(endpointFlag.Name){
 		log.Fatal("Error, need --endpoint ip:port")
 	}
 
-	config := trustee.Config{
+	config := escrow.Config{
 		DataDir: ctx.GlobalString(dataDirFlag.Name),
 		Endpoint: ctx.GlobalString(endpointFlag.Name),
 		Nodes: ctx.GlobalString(nodesFlag.Name),
 	}
 
-	var trusteeServer = trustee.New(config)
-	trusteeServer.Start()
+	var escrowServer = escrow.New(config)
+	escrowServer.Start()
 }
 
 func main(){
