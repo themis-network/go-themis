@@ -139,7 +139,7 @@ var (
 	// on an instant chain (0 second period). It's important to refuse these as the
 	// block reward is zero, so an empty block just bloats the chain... fast.
 	errWaitTransactions = errors.New("waiting for transactions")
-	
+
 	// errInvalidCoinbase is returned if an block is attempted to propose add/remove supper
 	// signer.
 	errInvalidCoinbase = errors.New("invalid coinbase")
@@ -678,14 +678,14 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 		return nil, err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
-	
-    // Remove a voted proposal
-    if _, ok := c.proposals[header.Coinbase]; ok {
-        c.lock.Lock()
-        delete(c.proposals, header.Coinbase)
-        c.lock.Unlock()
-    }
-    
+
+	// Remove a voted proposal
+	if _, ok := c.proposals[header.Coinbase]; ok {
+		c.lock.Lock()
+		delete(c.proposals, header.Coinbase)
+		c.lock.Unlock()
+	}
+
 	return block.WithSeal(header), nil
 }
 
