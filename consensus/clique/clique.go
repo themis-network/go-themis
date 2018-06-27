@@ -537,7 +537,7 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 		return err
 	}
 	if number%c.config.Epoch != 0 {
-		c.lock.RLock()
+		c.lock.Lock()
 
 		// Gather all the proposals that make sense voting on
 		addresses := make([]common.Address, 0, len(c.proposals))
@@ -557,10 +557,8 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 			} else {
 				copy(header.Nonce[:], nonceDropVote)
 			}
-			// Remove a voted proposal
-			delete(c.proposals, header.Coinbase)
 		}
-		c.lock.RUnlock()
+		c.lock.Unlock()
 	}
 	// Set the correct difficulty
 	header.Difficulty = CalcDifficulty(snap, c.signer)
@@ -680,7 +678,14 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 		return nil, err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
-
+	
+    // Remove a voted proposal
+    if _, ok := c.proposals[header.Coinbase]; ok {
+        c.lock.Lock()
+        delete(c.proposals, header.Coinbase)
+        c.lock.Unlock()
+    }
+    
 	return block.WithSeal(header), nil
 }
 
