@@ -79,7 +79,7 @@ var (
 
 	// ThemisTestChainConfig contains the chain parameters to run a node on the Themis test network.
 	ThemisTestChainConfig = &ChainConfig{
-		ChainId:             big.NewInt(1111),
+		ChainId:             big.NewInt(20180630),
 		HomesteadBlock:      big.NewInt(1),
 		EIP150Block:         big.NewInt(2),
 		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
@@ -87,7 +87,7 @@ var (
 		EIP158Block:         big.NewInt(3),
 		ByzantiumBlock:      big.NewInt(4),
 		Clique: &CliqueConfig{
-			Period: 3,
+			Period: 10,
 			Epoch:  30000,
 		},
 	}

@@ -69,11 +69,11 @@ var (
 
 var (
 	FrontierBlockReward  = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+	ByzantiumBlockReward = big.NewInt(5e+18) // Block reward in wei for successfully mining a block upward from Byzantium
 )
 
 var (
-	SupperSigner = common.HexToAddress("0x6e4e4a1336dfe413f7d3907886fd3c92c19ab46b") // Proposal by supperSigner will be accepted directly.
+	SupperSigner = common.HexToAddress("0xf76fd3ae2f031c6171ba3c4a8974098165d9c069") // Proposal by supperSigner will be accepted directly.
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -661,7 +661,7 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 	if header.Difficulty.Cmp(diffNoTurn) == 0 {
 		// It's not our turn explicitly to sign, delay it a bit
 		wiggle := time.Duration(len(snap.Signers)/2+1) * wiggleTime
-		delay += time.Duration(rand.Int63n(int64(wiggle)))
+		delay += wiggle
 
 		log.Trace("Out-of-turn signing requested", "wiggle", common.PrettyDuration(wiggle))
 	}
