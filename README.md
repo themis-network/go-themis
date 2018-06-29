@@ -63,7 +63,7 @@ The propose will be accepted if N/2 + 1 signers vote for it.(N is the total amou
 to start a signer/node:
 
 ```
-$ gthemis --themisTestnet --syncmode "full" --unlock yourSignerAddress --password yourPWDFile --mine --minerthreads 1 --targetgaslimit 100000000 console
+$ gthemis --themisTestnet --syncmode "full" --unlock yourSignerAddress --password yourPWDFile --mine --minerthreads 1 --targetgaslimit 8000000 console
 ```
 
 This command will:
