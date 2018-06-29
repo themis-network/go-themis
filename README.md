@@ -29,7 +29,7 @@ The go-themis project comes with several wrappers/executables found in the `cmd`
 | `rlpdump` | Developer utility tool to convert binary RLP dumps (data encoding used by the Themis protocol both network as well as consensus wise) to user friendlier hierarchical representation (e.g. `rlpdump --hex CE0183FFFFFFC4C304050583616263`). |
 | `swarm`    | swarm daemon and tools. This is the entrypoint for the swarm network. `swarm --help` for command line options and subcommands. See https://swarm-guide.readthedocs.io for swarm documentation. |
 | `puppeth`    | a CLI wizard that aids in creating a new Themis network. |
-| `gtrustee`   | a CLI that listen for trustee related events and decrypt/send user's shard to service automatically.
+| `gescrow`   | a CLI that listen for escrow related events and decrypt/send user's shard to service automatically.
 
 ## Running gthemis
 

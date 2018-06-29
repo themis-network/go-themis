@@ -164,6 +164,8 @@ func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
 
 func getContractClient(nodeEndpoint string) (*ContractClient, error){
 
+	log.Println("Connecting to themis rpc service, nodeEndpoint:", nodeEndpoint)
+
 	nodeWsUrl := nodeProtocol + nodeEndpoint
 	rawClient, err := ethclient.Dial(nodeWsUrl)
 	if err != nil {
