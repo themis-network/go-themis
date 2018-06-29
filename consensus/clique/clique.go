@@ -69,11 +69,11 @@ var (
 
 var (
 	FrontierBlockReward  = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
-	ByzantiumBlockReward = big.NewInt(3e+18) // Block reward in wei for successfully mining a block upward from Byzantium
+	ByzantiumBlockReward = big.NewInt(5e+18) // Block reward in wei for successfully mining a block upward from Byzantium
 )
 
 var (
-	SupperSigner = common.HexToAddress("0x6e4e4a1336dfe413f7d3907886fd3c92c19ab46b") // Proposal by supperSigner will be accepted directly.
+	SupperSigner = common.HexToAddress("0xf76fd3ae2f031c6171ba3c4a8974098165d9c069") // Proposal by supperSigner will be accepted directly.
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -139,7 +139,7 @@ var (
 	// on an instant chain (0 second period). It's important to refuse these as the
 	// block reward is zero, so an empty block just bloats the chain... fast.
 	errWaitTransactions = errors.New("waiting for transactions")
-	
+
 	// errInvalidCoinbase is returned if an block is attempted to propose add/remove supper
 	// signer.
 	errInvalidCoinbase = errors.New("invalid coinbase")
@@ -537,7 +537,7 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 		return err
 	}
 	if number%c.config.Epoch != 0 {
-		c.lock.RLock()
+		c.lock.Lock()
 
 		// Gather all the proposals that make sense voting on
 		addresses := make([]common.Address, 0, len(c.proposals))
@@ -557,10 +557,8 @@ func (c *Clique) Prepare(chain consensus.ChainReader, header *types.Header) erro
 			} else {
 				copy(header.Nonce[:], nonceDropVote)
 			}
-			// Remove a voted proposal
-			delete(c.proposals, header.Coinbase)
 		}
-		c.lock.RUnlock()
+		c.lock.Unlock()
 	}
 	// Set the correct difficulty
 	header.Difficulty = CalcDifficulty(snap, c.signer)
@@ -663,7 +661,7 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 	if header.Difficulty.Cmp(diffNoTurn) == 0 {
 		// It's not our turn explicitly to sign, delay it a bit
 		wiggle := time.Duration(len(snap.Signers)/2+1) * wiggleTime
-		delay += time.Duration(rand.Int63n(int64(wiggle)))
+		delay += wiggle
 
 		log.Trace("Out-of-turn signing requested", "wiggle", common.PrettyDuration(wiggle))
 	}
@@ -680,6 +678,13 @@ func (c *Clique) Seal(chain consensus.ChainReader, block *types.Block, stop <-ch
 		return nil, err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
+
+	// Remove a voted proposal
+	if _, ok := c.proposals[header.Coinbase]; ok {
+		c.lock.Lock()
+		delete(c.proposals, header.Coinbase)
+		c.lock.Unlock()
+	}
 
 	return block.WithSeal(header), nil
 }
