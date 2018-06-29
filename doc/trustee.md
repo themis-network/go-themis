@@ -1,6 +1,10 @@
 ## Escrow service
 
-Official golang implementation of the Themis Escrow protocol.
+Official golang implementation of the Themis Escrow protocol.Using smart contracts to complete the escrow of secret-key fragments and record escrow order data on blockchain.
+In the protocol, Alice and Bob generate a 2-of-2 shared threshold address as their escrow  address, Alice has her private key ，Bob has his private key ，and according to the Thresh-Key-Gen protocol，only if Alice or Bob has both their private key, he can unlock the escrow address.
+Alice and Bob send escrow request on blockchain, and then they we accept response from several（odd）escrow peers. Then Alice and Bob interact with escrow peers, and create a Shamir-secret sharing . If there are 21 peers,  secret shares of 11 peers is sufficient to recover the secret key. 
+
+
 
 ## Building the source
 
