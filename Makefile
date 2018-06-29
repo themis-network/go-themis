@@ -16,10 +16,10 @@ gthemis:
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/gthemis\" to launch gthemis."
 
-gtrustee:
-	build/env.sh go run build/ci.go install ./cmd/gtrustee
+gescrow:
+	build/env.sh go run build/ci.go install ./cmd/gescrow
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/gtrustee\" to launch gtrustee."
+	@echo "Run \"$(GOBIN)/gescrow\" to launch gescrow."
 
 swarm:
 	build/env.sh go run build/ci.go install ./cmd/swarm
