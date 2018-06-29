@@ -16,7 +16,6 @@ import (
 
 const (
 	ContractAddr  = "68B6a3F721eFB1da930a3CA6b9dC1fdD559d5a6e" //trade contract address
-	escrowAddr = "3cbcd06204c1df807f942f9edab069934fc14140" //escrow's address
 	testRawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
 	uploadSecretTopic = ""
@@ -129,7 +128,7 @@ func BytesToInt64(buf []byte) int64 {
 //从合约中获取碎片
 func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
 
-	from := common.HexToAddress(escrowAddr)
+	from := t.escrowAddr
 
 	opts := &bind.CallOpts{
 		Pending: true,
@@ -147,7 +146,7 @@ func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
 //获取订单仲裁结果
 func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
 
-	from := common.HexToAddress(escrowAddr)
+	from := t.escrowAddr
 
 	opts := &bind.CallOpts{
 		Pending: false,

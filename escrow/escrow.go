@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"fmt"
 	"github.com/themis-network/go-themis/escrow/gopass"
+	"github.com/themis-network/go-themis/common"
 )
 
 var(
@@ -34,6 +35,8 @@ type EscrowNode struct{
 	privKey keystore.Key //EscrowNode's private key
 
 	contractClient *ContractClient
+
+	escrowAddr common.Address
 }
 
 type ArbitrateEvent struct{
@@ -76,6 +79,7 @@ func New(c Config) (t *EscrowNode){
 		stop: make(chan struct{}),
 		privKey: *privKey,
 		contractClient: contractClient,
+		escrowAddr: privKey.Address,
 		}
 	return escrow
 }
