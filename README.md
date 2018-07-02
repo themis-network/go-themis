@@ -66,6 +66,9 @@ to start a signer/node:
 $ gthemis --themisTestnet --syncmode "full" --unlock yourSignerAddress --password yourPWDFile --mine --minerthreads 1 --targetgaslimit 8000000 console
 ```
 
+In order to unlock signer account, you have to supply password by manually enter it if you don't 
+want to clear it into a file, otherwise using `--password` flag as above.
+
 This command will:
 
 * Start Themis test net in full mode.
