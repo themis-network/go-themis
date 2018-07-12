@@ -29,6 +29,7 @@ import (
 	"github.com/themis-network/go-themis/crypto/sha3"
 )
 
+// Lengths of hashes and addresses in bytes.
 const (
 	HashLength    = 32
 	AddressLength = 20

@@ -23,8 +23,10 @@ import (
 	"github.com/aristanetworks/goarista/monotime"
 )
 
-type AbsTime time.Duration // absolute monotonic time
+// AbsTime represents absolute monotonic time.
+type AbsTime time.Duration
 
+// Now returns the current absolute monotonic time.
 func Now() AbsTime {
 	return AbsTime(monotime.Now())
 }

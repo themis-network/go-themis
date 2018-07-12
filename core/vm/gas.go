@@ -22,6 +22,7 @@ import (
 	"github.com/themis-network/go-themis/params"
 )
 
+// Gas costs
 const (
 	GasQuickStep   uint64 = 2
 	GasFastestStep uint64 = 3
