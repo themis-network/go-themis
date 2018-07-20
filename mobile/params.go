@@ -19,9 +19,6 @@
 package geth
 
 import (
-	"encoding/json"
-
-	"github.com/themis-network/go-themis/core"
 	"github.com/themis-network/go-themis/p2p/discv5"
 	"github.com/themis-network/go-themis/params"
 )
@@ -30,24 +27,6 @@ import (
 // is actually empty since that defaults to the hard coded binary genesis block.
 func MainnetGenesis() string {
 	return ""
-}
-
-// TestnetGenesis returns the JSON spec to use for the Ethereum test network.
-func TestnetGenesis() string {
-	enc, err := json.Marshal(core.DefaultTestnetGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
-}
-
-// RinkebyGenesis returns the JSON spec to use for the Rinkeby test network
-func RinkebyGenesis() string {
-	enc, err := json.Marshal(core.DefaultRinkebyGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
 }
 
 // FoundationBootnodes returns the enode URLs of the P2P bootstrap nodes operated
