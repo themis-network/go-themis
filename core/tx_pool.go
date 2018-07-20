@@ -76,6 +76,10 @@ var (
 	// than some meaningful limit a user might use. This is not a consensus error
 	// making the transaction invalid, rather a DOS protection.
 	ErrOversizedData = errors.New("oversized data")
+	
+	// ErrContractCreationCodeNil is returned if the input of data of a contract
+	// creation transaction is nil.
+	ErrContractCreationCodeNil = errors.New("nil code for create contract")
 )
 
 var (
@@ -561,6 +565,10 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// transactions but may occur if you create a transaction using the RPC.
 	if tx.Value().Sign() < 0 {
 		return ErrNegativeValue
+	}
+	// Ensure the code of contract creation isn't empty.
+	if tx.To() == nil && tx.Data() == nil {
+		return ErrContractCreationCodeNil
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
 	if pool.currentMaxGas < tx.Gas() {
