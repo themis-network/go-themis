@@ -54,3 +54,14 @@ func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	return nil
 }
+
+// Prepare implements consensus.Engine, preparing all the consensus fields of the
+// header for running the transactions on top.
+func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error {
+	// Set default field
+	// Try to propose a new pending producers scheme when epoch start
+	// Try to propose a new active producers scheme when pending producers'block become IBM
+	// Try to propose a new proposedIBM block(set proposedIBM block num)
+	// Try to propose a new dposIBM block(set dposIBM block num)
+	return nil
+}
