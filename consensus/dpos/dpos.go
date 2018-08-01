@@ -88,6 +88,9 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	for i := header.ProposedIBM.Uint64(); i != header.Number.Uint64(); i++ {
 
 		iheader := chain.GetHeaderByNumber(i)
+		if len(iheader.ActiveProducers) != len(header.ActiveProducers) {
+			break
+		}
 		for _, x := range proposedList {
 			if x == iheader.Coinbase {
 				continue
