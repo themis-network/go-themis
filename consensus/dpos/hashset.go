@@ -29,7 +29,7 @@ func (s *set) insert(a []byte) {
 		s.bucket[num].size++
 	} else {
 		temp := s.bucket[num].first
-		for i := 0; i != s.bucket[num].size; i++ {
+		for i := 1; i != s.bucket[num].size; i++ {
 			temp = temp.next
 		}
 		temp.next = &node{a, nil}
