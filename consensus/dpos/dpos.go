@@ -83,7 +83,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
 
 	proposed := false
-	proposedList := make([]common.Address, 0)
+	proposedList := set{0, make([]list, 21)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
 	for i := header.ProposedIBM.Uint64(); i != header.Number.Uint64(); i++ {
 
@@ -91,13 +91,13 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		if len(iheader.ActiveProducers) != len(header.ActiveProducers) {
 			break
 		}
-		for _, x := range proposedList {
-			if x == iheader.Coinbase {
-				continue
-			}
+
+		if proposedList.find(iheader.Coinbase[:]) {
+			continue
+		} else {
+			proposedList.insert(iheader.Coinbase[:])
 		}
-		proposedList = append(proposedList, iheader.Coinbase)
-		if len(proposedList) > 21*2/3+1 {
+		if proposedList.size > (len(iheader.ActiveProducers)*2/3 + 1) {
 			proposed = true
 			break
 		}
