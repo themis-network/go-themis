@@ -1,6 +1,7 @@
 package dpos
 
 import (
+	"math/big"
 	"sync"
 
 	"github.com/themis-network/go-themis/common"
@@ -65,9 +66,52 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	// Set default field
 	// Try to propose a new pending producers scheme when epoch start
+	inturn := false
+	lastheader := chain.CurrentHeader()
+	for _, active := range lastheader.ActiveProducers {
+		if active == header.Coinbase {
+			inturn = true
+			break
+		}
+	}
+	if !inturn {
+		return nil
+	}
+
 	// Try to propose a new active producers scheme when pending producers'block become IBM
+	if lastheader.ProposePendingProducersBlock.Cmp(lastheader.DposIBM) <= 0 {
+		header.ActiveProducers = chain.GetHeaderByNumber(lastheader.ProposePendingProducersBlock.Uint64()).PendingProducers
+		header.ActiveVersion = lastheader.ActiveVersion + 1
+	} else {
+		header.ActiveProducers = lastheader.ActiveProducers
+		header.ActiveVersion = lastheader.ActiveVersion
+	}
+
+	proposed := false
+	proposedList := set{0, make([]list, 21)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
+	for i := header.ProposedIBM.Uint64(); i != header.Number.Uint64(); i++ {
+
+		iheader := chain.GetHeaderByNumber(i)
+		if len(iheader.ActiveProducers) != len(header.ActiveProducers) {
+			break
+		}
+
+		if proposedList.find(iheader.Coinbase[:]) {
+			continue
+		} else {
+			proposedList.insert(iheader.Coinbase[:])
+		}
+		if proposedList.size > (len(iheader.ActiveProducers)*2/3 + 1) {
+			proposed = true
+			break
+		}
+	}
 	// Try to propose a new dposIBM block(set dposIBM block num)
+	if proposed {
+		header.DposIBM = header.ProposedIBM
+		header.ProposedIBM.Add(header.ProposedIBM, big.NewInt(1))
+	}
 	return nil
 }
 
