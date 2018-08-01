@@ -6,8 +6,13 @@ import (
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus"
 	"github.com/themis-network/go-themis/core/types"
+	"github.com/themis-network/go-themis/core/state"
 	"github.com/themis-network/go-themis/ethdb"
 	"github.com/themis-network/go-themis/params"
+)
+
+var (
+	blockReward    *big.Int = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
 )
 
 // Dpos is the proof-of-stack consensus engine.
@@ -64,4 +69,38 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
 	// Try to propose a new dposIBM block(set dposIBM block num)
 	return nil
+}
+
+func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+	// Accumulate any block and uncle rewards and commit the final state root
+	accumulateRewards(state, header)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+
+	// Header seems complete, assemble into a block and return
+	return types.NewBlock(header, txs, nil, receipts), nil
+}
+
+// AccumulateRewards credits the coinbase of the given block with the mining
+// reward. The total reward consists of the static block reward and rewards for
+// included uncles. The coinbase of each uncle block is also rewarded.
+func accumulateRewards(state *state.StateDB, header *types.Header) {
+	state.AddBalance(header.Coinbase, blockReward)
+}
+
+// CalcDifficulty is the difficulty adjustment algorithm. It returns
+// the difficulty that a new block should have when created at time
+// given the parent block's time and difficulty.
+func (d *Dpos) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
+	return big.NewInt(1)
+}
+
+// APIs implements consensus.Engine, returning the user facing RPC API to allow
+// controlling the signer voting.
+func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
+	return []rpc.API{{
+		Namespace: "dpos",
+		Version:   "1.0",
+		Service:   &API{chain: chain, dpos: d},
+		Public:    true,
+	}}
 }
