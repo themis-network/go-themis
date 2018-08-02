@@ -21,7 +21,7 @@ import (
 var (
 	extraVanity          = 32                // Fixed number of extra-data prefix bytes reserved for signer vanity
 	extraSeal            = 65                // Fixed number of extra-data suffix bytes reserved for signer seal
-	blockReward *big.Int = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
+	blockReward          = big.NewInt(5e+18) // Block reward in wei for successfully mining a block
 )
 
 // Various error messages to mark blocks invalid. These should be private to
