@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus"
@@ -228,10 +227,11 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	proposed := false
 	proposedList := set{0, make([]list, 21)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
-	for i := header.ProposedIBM.Uint64(); i != header.Number.Uint64(); i++ {
+	i := header.ProposedIBM.Uint64()
+	for ; i != header.Number.Uint64(); i++ {
 
 		iheader := chain.GetHeaderByNumber(i)
-		if len(iheader.ActiveProducers) != len(header.ActiveProducers) {
+		if iheader.ActiveVersion != header.ActiveVersion {
 			break
 		}
 
@@ -248,7 +248,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Try to propose a new dposIBM block(set dposIBM block num)
 	if proposed {
 		header.DposIBM = header.ProposedIBM
-		header.ProposedIBM.Add(header.ProposedIBM, big.NewInt(1))
+		header.ProposedIBM.SetUint64(i)
 	}
 	return nil
 }
