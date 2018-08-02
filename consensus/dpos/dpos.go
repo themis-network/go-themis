@@ -227,8 +227,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	proposed := false
 	proposedList := set{0, make([]list, 21)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
-	i := header.ProposedIBM.Uint64()
-	for ; i != header.Number.Uint64(); i++ {
+	i := header.Number.Uint64()
+	for ; i != header.ProposedIBM.Uint64(); i-- {
 
 		iheader := chain.GetHeaderByNumber(i)
 		if iheader.ActiveVersion != header.ActiveVersion {
