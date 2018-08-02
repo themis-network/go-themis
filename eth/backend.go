@@ -49,6 +49,9 @@ import (
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
+	"github.com/themis-network/go-themis/consensus/dpos"
+	"context"
+	"math"
 )
 
 type LesServer interface {
@@ -210,6 +213,10 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (ethdb.Data
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(ctx *node.ServiceContext, config *ethash.Config, chainConfig *params.ChainConfig, db ethdb.Database) consensus.Engine {
+	// If delegated-proof-of-stake is requested, set it up
+	if chainConfig.Dpos != nil {
+		return dpos.New(chainConfig.Dpos, db)
+	}
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
@@ -341,10 +348,20 @@ func (s *Ethereum) StartMining(local bool) error {
 	if clique, ok := s.engine.(*clique.Clique); ok {
 		wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
 		if wallet == nil || err != nil {
-			log.Error("Etherbase account unavailable locally", "err", err)
+			log.Error("Themis account unavailable locally", "err", err)
 			return fmt.Errorf("signer missing: %v", err)
 		}
 		clique.Authorize(eb, wallet.SignHash)
+	}
+	if dpos, ok := s.engine.(*dpos.Dpos); ok {
+		wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
+		if wallet == nil || err != nil {
+			log.Error("Themis account unavailable locally", "err", err)
+			return fmt.Errorf("signer missing: %v", err)
+		}
+		dpos.Authorize(eb, wallet.SignHash)
+		// Set call msg channel
+		dpos.SetCallFunc(s.callContract)
 	}
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection
@@ -423,4 +440,34 @@ func (s *Ethereum) Stop() error {
 	close(s.shutdownChan)
 
 	return nil
+}
+
+
+// TODO update
+func (s *Ethereum) callContract(message dpos.SystemCall) ([]byte, error) {
+	ctx := context.Background()
+	header := s.blockchain.GetBlockByNumber(message.AtBlock)
+	statedb, err := s.blockchain.StateAt(header.Root())
+	if err != nil {
+		return nil, err
+	}
+	
+	evm, vmError, err := s.APIBackend.GetEVM(ctx, message, statedb, header.Header(), vm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	if vmError() != nil {
+		return nil, vmError()
+	}
+	
+	gp := new(core.GasPool).AddGas(math.MaxUint64)
+	res, _, failed, err := core.ApplyMessage(evm, message, gp)
+	if err != nil {
+		return nil, err
+	}
+	if failed == true {
+		return nil, errors.New("")
+	}
+	
+	return res, nil
 }

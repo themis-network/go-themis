@@ -35,6 +35,7 @@ import (
 	"github.com/themis-network/go-themis/log"
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
+	"github.com/themis-network/go-themis/consensus/dpos"
 )
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -154,7 +155,7 @@ func SetupGenesisBlock(db ethdb.Database, genesis *Genesis) (*params.ChainConfig
 	if genesis != nil && genesis.Config == nil {
 		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
-
+	
 	// Just commit the new block if there is no stored genesis block.
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if (stored == common.Hash{}) {
@@ -231,6 +232,16 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 			statedb.SetState(addr, key, value)
 		}
 	}
+	
+	// Setup dpos consensus system contract
+	if g.Config.Dpos != nil {
+		for _, contract := range dpos.HardcodedContractsDpos {
+			statedb.SetCode(contract.GetContractAddr(), hexutil.MustDecode(contract.GetCode()))
+			for key, value := range contract.GetStorage() {
+				statedb.SetState(contract.GetContractAddr(), key, value)
+			}
+		}
+	}
 	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
@@ -244,12 +255,25 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		MixDigest:  g.Mixhash,
 		Coinbase:   g.Coinbase,
 		Root:       root,
+		PendingProducers: []common.Address{},
+		PendingVersion: 0,
+		ProposePendingProducersBlock: new(big.Int).SetUint64(0),
+		ActiveVersion: 0,
+		ProposedIBM: new(big.Int).SetUint64(0),
+		DposIBM: new(big.Int).SetUint64(0),
 	}
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
 	}
 	if g.Difficulty == nil {
 		head.Difficulty = params.GenesisDifficulty
+	}
+	if g.Config.Dpos.Producers != nil {
+		producers := make([]common.Address, len(g.Config.Dpos.Producers))
+		for _, producer := range g.Config.Dpos.Producers {
+			producers = append(producers, producer.Address)
+		}
+		head.ActiveProducers = producers
 	}
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true)
@@ -299,11 +323,12 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.MainnetChainConfig,
-		Nonce:      66,
+		Nonce:      0,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   5000,
-		Difficulty: big.NewInt(17179869184),
-		Alloc:      decodePrealloc(mainnetAllocData),
+		GasLimit:   8000000,
+		Difficulty: big.NewInt(1),
+		Alloc:      map[common.Address]GenesisAccount{
+		},
 	}
 }
 
