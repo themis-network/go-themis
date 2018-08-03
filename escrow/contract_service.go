@@ -7,18 +7,16 @@ import (
 	"github.com/themis-network/go-themis"
 	"github.com/themis-network/go-themis/ethclient"
 	"context"
-	"log"
 	"github.com/themis-network/go-themis/core/types"
-	"encoding/binary"
 	"github.com/themis-network/go-themis/cmd/stub"
 	"github.com/themis-network/go-themis/accounts/abi/bind"
 )
 
 const (
-	ContractAddr  = "68B6a3F721eFB1da930a3CA6b9dC1fdD559d5a6e" //trade contract address
+	ContractAddr  = "368790bd905Adf4962e36BDec79EEF7dB7F0BEA3" //trade contract address
 	testRawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
-	uploadSecretTopic = ""
+	uploadSecretTopic = "0x8a59d01dda427123e224b10a5103435e6a94ce386bd3d81052074263f9defce8"
 	nodeProtocol = "ws://"
 )
 
@@ -33,7 +31,8 @@ type Monitor struct{
 type ContractClient struct{
 	rawClient *ethclient.Client
 	ctx context.Context
-	trader *stub.TradeCaller
+	traderCaller *stub.TradeCaller
+	traderTransactor *stub.Trade
 }
 
 
@@ -53,7 +52,7 @@ func GetContractData(){
 
 func (t *EscrowNode) monitor(){
 
-	log.Println("start monitor")
+	logger.Println("start monitor")
 
 	ctx := context.Background()
 	contractAddress := common.HexToAddress(ContractAddr)
@@ -70,19 +69,19 @@ func (t *EscrowNode) monitor(){
 	sub, err := rawClient.SubscribeFilterLogs(ctx, query, ch)
 
 	if err != nil {
-		log.Println("Subscribe error:", err)
+		logger.Println("Subscribe error:", err)
 		return
 	}
 
 	for {
 		select {
 		case err := <-sub.Err():
-			log.Fatal(err)
+			logger.Fatal(err)
 		case eventLog := <-ch:
-			fmt.Println("Log:", eventLog.Address.Hex(), eventLog.Data)
+			logger.Println("Log:", eventLog.Address.Hex(), eventLog.Data)
 
 			for i := 0; i<len(eventLog.Topics); i++ {
-				log.Println(eventLog.Topics[i].Hex())
+				logger.Println("topic:", i, eventLog.Topics[i].Hex())
 			}
 			t.processLog(eventLog)
 		}
@@ -99,34 +98,56 @@ func (t *EscrowNode)processLog(eventLog types.Log){
 	if topic == judgeTopic { //judge event
 		length := len(eventLog.Data)
 		orderId := BytesToInt64(eventLog.Data[length-8:])
-		winner := eventLog.Topics[1].Big()
+		winner := eventLog.Topics[1].Bytes()
 		juedge := eventLog.Topics[2].Hex()
-		t.orderWinner[orderId] = winner
+		t.orderWinner[orderId] = BytesToUint32(winner)
 
-		log.Println("Process Log, event judgeTopic, orderId:{}, winner:{}, judge:{}", orderId, winner, juedge)
+		logger.Println("Process Log, event judgeTopic, orderId:{}, winner:{}, judge:{}", orderId, winner, juedge)
 
-		secret, err := t.getFragment(orderId, winner)
+		secret, err := t.getFragment(orderId, t.orderWinner[orderId])
 		if err != nil {
-			log.Println("Error, getFragment error: ", err)
+			logger.Println("Error, getFragment error: ", err)
 		}
 
 		decrypt, err := t.decrypt(secret)
 		if err != nil {
-			log.Println("Error, Decrypt error: ", err)
+			logger.Println("Error, Decrypt error: ", err)
 		}
 
 		t.secrets[orderId] = decrypt
 	}else if topic == uploadSecretTopic { //upload secret event
-		//do nothing
+		orderIdBytes := eventLog.Topics[1].Bytes()
+		orderId := big.NewInt(0)
+		orderId.SetBytes(orderIdBytes)
+
+		t.sendVerifyResults(orderId)
+	}else {
 	}
 }
 
-func BytesToInt64(buf []byte) int64 {
-	return int64(binary.BigEndian.Uint64(buf))
+func (t *EscrowNode)sendVerifyResults(orderId *big.Int){
+
+	nonce, _ := t.contractClient.rawClient.PendingNonceAt(context.Background(), t.escrowAddr)
+	gasPrice, _ := t.contractClient.rawClient.SuggestGasPrice(context.Background())
+
+	logger.Println(nonce, gasPrice, )
+
+	auth := bind.NewKeyedTransactor(t.privKey.PrivateKey)
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(0)     // in wei
+	auth.GasLimit = uint64(500000) // in units
+	auth.GasPrice = gasPrice
+
+	tx, err:= t.contractClient.traderTransactor.SendVerifyResult(auth, orderId, true, true)
+	if err!= nil {
+		logger.Println(err)
+	}
+	logger.Println("sendVerifyResults", orderId, tx.Hash().Hex())
 }
 
+
 //从合约中获取碎片
-func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
+func (t *EscrowNode) getFragment(order int64, user uint32) (string, error){
 
 	from := t.escrowAddr
 
@@ -136,7 +157,7 @@ func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
 		Context: t.contractClient.ctx,
 	}
 
-	str, err := t.contractClient.trader.GetSecret(opts, big.NewInt(order), from, user)
+	str, err := t.contractClient.traderCaller.GetSecret(opts, big.NewInt(order), from, user)
 	if err != nil{
 		return "", nil
 	}
@@ -144,7 +165,7 @@ func (t *EscrowNode) getFragment(order int64, user *big.Int) (string, error){
 }
 
 //获取订单仲裁结果
-func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
+func (t *EscrowNode) getWinner(order int64) (uint32, error){
 
 	from := t.escrowAddr
 
@@ -154,9 +175,9 @@ func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
 		Context: t.contractClient.ctx,
 	}
 
-	winner, err := t.contractClient.trader.GetWinner(opts, big.NewInt(order))
+	winner, err := t.contractClient.traderCaller.GetWinner(opts, big.NewInt(order))
 	if err != nil{
-		return nil, err
+		return 0, err
 	}
 
 	return winner, nil
@@ -164,7 +185,7 @@ func (t *EscrowNode) getWinner(order int64) (*big.Int, error){
 
 func getContractClient(nodeEndpoint string) (*ContractClient, error){
 
-	log.Println("Connecting to themis rpc service, nodeEndpoint:", nodeEndpoint)
+	logger.Println("Connecting to themis rpc service, nodeEndpoint:", nodeEndpoint)
 
 	nodeWsUrl := nodeProtocol + nodeEndpoint
 	rawClient, err := ethclient.Dial(nodeWsUrl)
@@ -175,15 +196,18 @@ func getContractClient(nodeEndpoint string) (*ContractClient, error){
 	c := context.Background()
 
 	addr := common.HexToAddress(ContractAddr)
-	t, err := stub.NewTradeCaller(addr, rawClient)
+	tCaller, err := stub.NewTradeCaller(addr, rawClient)
+	tTran, err := stub.NewTrade(addr, rawClient)
 	if err != nil {
+		logger.Println("error NewTrade")
 		return nil, err
 	}
 
 	contractClient := &ContractClient{
 		rawClient: rawClient,
 		ctx: c,
-		trader: t,
+		traderCaller: tCaller,
+		traderTransactor: tTran,
 	}
 	return contractClient, nil
 }

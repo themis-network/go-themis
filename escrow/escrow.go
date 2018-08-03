@@ -4,10 +4,8 @@ import (
 	"sync"
 	"github.com/themis-network/go-themis/accounts/keystore"
 	"github.com/themis-network/go-themis/crypto/ecies"
-	"log"
 	"encoding/hex"
 	"io/ioutil"
-	"math/big"
 	"fmt"
 	"github.com/themis-network/go-themis/escrow/gopass"
 	"github.com/themis-network/go-themis/common"
@@ -26,7 +24,7 @@ type EscrowNode struct{
 
 	arbitrateEvents chan ArbitrateEvent
 
-	orderWinner map[int64]*big.Int
+	orderWinner map[int64]uint32
 
 	stop chan struct{} //Channel to wait for termination notifications
 
@@ -52,29 +50,29 @@ func New(c Config) (t *EscrowNode){
 	fmt.Printf("Enter keystore password: ")
 	maskedPassword, err := gopass.GetPasswdMasked() // Masked
 	if err != nil {
-		log.Fatal("readPassword error: ", err)
+		logger.Fatal("readPassword error: ", err)
 	}
 	pass = string(maskedPassword)
 
 	keyStoreBlob, err := ioutil.ReadFile(c.DataDir)
 	if err != nil {
-		log.Fatal("failed to read keystore file: ", err)
+		logger.Fatal("failed to read keystore file: ", err)
 	}
-	log.Println("loaded keystore file...")
+	logger.Println("loaded keystore file...")
 
 	privKey, err:= keystore.DecryptKey(keyStoreBlob, pass)
 	if err != nil {
-		log.Fatal("failed to DecryptKey: ", err)
+		logger.Fatal("failed to DecryptKey: ", err)
 	}
 
 	contractClient, err := getContractClient(c.Nodes)
 	if err != nil {
-		log.Fatal("failed to get contractClient: ", err)
+		logger.Fatal("failed to get contractClient: ", err)
 	}
 
 	var escrow = &EscrowNode{
 		secrets : make(map[int64]string),
-		orderWinner : make(map[int64]*big.Int),
+		orderWinner : make(map[int64]uint32),
 		config : c,
 		stop: make(chan struct{}),
 		privKey: *privKey,

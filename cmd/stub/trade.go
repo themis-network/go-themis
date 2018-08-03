@@ -15,8 +15,10 @@ import (
 	"github.com/themis-network/go-themis/event"
 )
 
+
+
 // TradeABI is the input ABI used to generate the binding from.
-const TradeABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"addArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"trusteeID\",\"type\":\"address\"},{\"name\":\"user\",\"type\":\"uint256\"}],\"name\":\"getSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getWinner\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"winner\",\"type\":\"uint256\"}],\"name\":\"judge\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"createUserID\",\"type\":\"uint256\"}],\"name\":\"cancelTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getOrderSeller\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trusteeNumber\",\"type\":\"uint256\"}],\"name\":\"updateDefaultTrusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getPerFeeOfOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"removeArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"user\",\"type\":\"uint256\"}],\"name\":\"arbitrate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getRequester\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getOrderTrustees\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"isArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trustee\",\"type\":\"address\"}],\"name\":\"updateTrusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"userID\",\"type\":\"uint256\"}],\"name\":\"confirmTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"secrets\",\"type\":\"string\"},{\"name\":\"userID\",\"type\":\"uint256\"}],\"name\":\"uploadSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"userID\",\"type\":\"uint256\"},{\"name\":\"userType\",\"type\":\"uint8\"}],\"name\":\"createNewTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"withdrawFee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"},{\"name\":\"user\",\"type\":\"address\"}],\"name\":\"isOrderTrustee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"finishOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"getOrderBuyer\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"userType\",\"type\":\"uint8\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogCreateOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"creator\",\"type\":\"address\"}],\"name\":\"LogCancelTrade\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"trustees\",\"type\":\"address[]\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogConfirmTradeOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"secrets\",\"type\":\"string\"}],\"name\":\"LogUploadSecret\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint256\"}],\"name\":\"LogFinishOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LogWithdrawFee\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint256\"}],\"name\":\"Arbitrate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"winner\",\"type\":\"uint256\"},{\"indexed\":true,\"name\":\"judge\",\"type\":\"address\"}],\"name\":\"Judge\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"AddArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"RemoveArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"newNumber\",\"type\":\"uint256\"}],\"name\":\"LogUpdateDefaultTrusteeNumber\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"newAddress\",\"type\":\"address\"}],\"name\":\"LogUpdateTrusteeContract\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}],\"name\":\"OwnershipRenounced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
+const TradeABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"addArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"address\"}],\"name\":\"isOrderTrustee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"secrets\",\"type\":\"string\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"verifyData\",\"type\":\"string\"}],\"name\":\"uploadSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getRequester\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderTrustees\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderBuyer\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"finishOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"buyerResult\",\"type\":\"bool\"},{\"name\":\"sellerResult\",\"type\":\"bool\"}],\"name\":\"sendVerifyResult\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getVerifyData\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"}],\"name\":\"confirmTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"removeArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"winner\",\"type\":\"uint32\"}],\"name\":\"judge\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"isArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getWinner\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trustee\",\"type\":\"address\"}],\"name\":\"updateTrusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"createUserID\",\"type\":\"uint32\"}],\"name\":\"cancelTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderSeller\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trusteeNumber\",\"type\":\"uint8\"}],\"name\":\"updateDefaultTrusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderStatus\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"withdrawFee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getPerFeeOfOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"arbitrate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"trusteeID\",\"type\":\"address\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"userType\",\"type\":\"uint8\"}],\"name\":\"createNewTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"userType\",\"type\":\"uint8\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogCreateOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"creator\",\"type\":\"address\"}],\"name\":\"LogCancelTrade\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"trustees\",\"type\":\"address[]\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogConfirmTradeOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"secrets\",\"type\":\"string\"}],\"name\":\"LogUploadSecret\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"buyerResult\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"sellerResult\",\"type\":\"bool\"}],\"name\":\"LogVerifyResult\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"LogFinishOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LogWithdrawFee\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"Arbitrate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"winner\",\"type\":\"uint32\"},{\"indexed\":true,\"name\":\"judge\",\"type\":\"address\"}],\"name\":\"Judge\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"AddArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"RemoveArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"newNumber\",\"type\":\"uint256\"}],\"name\":\"LogUpdateDefaultTrusteeNumber\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"newAddress\",\"type\":\"address\"}],\"name\":\"LogUpdateTrusteeContract\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}],\"name\":\"OwnershipRenounced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
 
 // Trade is an auto generated Go binding around an Ethereum contract.
 type Trade struct {
@@ -160,9 +162,9 @@ func (_Trade *TradeTransactorRaw) Transact(opts *bind.TransactOpts, method strin
 	return _Trade.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetOrderBuyer is a free data retrieval call binding the contract method 0xf0d06926.
+// GetOrderBuyer is a free data retrieval call binding the contract method 0x2666b767.
 //
-// Solidity: function getOrderBuyer(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderBuyer(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCaller) GetOrderBuyer(opts *bind.CallOpts, orderID *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -172,23 +174,23 @@ func (_Trade *TradeCaller) GetOrderBuyer(opts *bind.CallOpts, orderID *big.Int) 
 	return *ret0, err
 }
 
-// GetOrderBuyer is a free data retrieval call binding the contract method 0xf0d06926.
+// GetOrderBuyer is a free data retrieval call binding the contract method 0x2666b767.
 //
-// Solidity: function getOrderBuyer(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderBuyer(orderID uint80) constant returns(uint256)
 func (_Trade *TradeSession) GetOrderBuyer(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetOrderBuyer(&_Trade.CallOpts, orderID)
 }
 
-// GetOrderBuyer is a free data retrieval call binding the contract method 0xf0d06926.
+// GetOrderBuyer is a free data retrieval call binding the contract method 0x2666b767.
 //
-// Solidity: function getOrderBuyer(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderBuyer(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCallerSession) GetOrderBuyer(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetOrderBuyer(&_Trade.CallOpts, orderID)
 }
 
-// GetOrderSeller is a free data retrieval call binding the contract method 0x82d0d319.
+// GetOrderSeller is a free data retrieval call binding the contract method 0xdcaba7a3.
 //
-// Solidity: function getOrderSeller(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderSeller(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCaller) GetOrderSeller(opts *bind.CallOpts, orderID *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -198,23 +200,49 @@ func (_Trade *TradeCaller) GetOrderSeller(opts *bind.CallOpts, orderID *big.Int)
 	return *ret0, err
 }
 
-// GetOrderSeller is a free data retrieval call binding the contract method 0x82d0d319.
+// GetOrderSeller is a free data retrieval call binding the contract method 0xdcaba7a3.
 //
-// Solidity: function getOrderSeller(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderSeller(orderID uint80) constant returns(uint256)
 func (_Trade *TradeSession) GetOrderSeller(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetOrderSeller(&_Trade.CallOpts, orderID)
 }
 
-// GetOrderSeller is a free data retrieval call binding the contract method 0x82d0d319.
+// GetOrderSeller is a free data retrieval call binding the contract method 0xdcaba7a3.
 //
-// Solidity: function getOrderSeller(orderID uint256) constant returns(uint256)
+// Solidity: function getOrderSeller(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCallerSession) GetOrderSeller(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetOrderSeller(&_Trade.CallOpts, orderID)
 }
 
-// GetOrderTrustees is a free data retrieval call binding the contract method 0x9d5bd1d7.
+// GetOrderStatus is a free data retrieval call binding the contract method 0xde757e93.
 //
-// Solidity: function getOrderTrustees(orderID uint256) constant returns(address[])
+// Solidity: function getOrderStatus(orderID uint80) constant returns(uint8)
+func (_Trade *TradeCaller) GetOrderStatus(opts *bind.CallOpts, orderID *big.Int) (uint8, error) {
+	var (
+		ret0 = new(uint8)
+	)
+	out := ret0
+	err := _Trade.contract.Call(opts, out, "getOrderStatus", orderID)
+	return *ret0, err
+}
+
+// GetOrderStatus is a free data retrieval call binding the contract method 0xde757e93.
+//
+// Solidity: function getOrderStatus(orderID uint80) constant returns(uint8)
+func (_Trade *TradeSession) GetOrderStatus(orderID *big.Int) (uint8, error) {
+	return _Trade.Contract.GetOrderStatus(&_Trade.CallOpts, orderID)
+}
+
+// GetOrderStatus is a free data retrieval call binding the contract method 0xde757e93.
+//
+// Solidity: function getOrderStatus(orderID uint80) constant returns(uint8)
+func (_Trade *TradeCallerSession) GetOrderStatus(orderID *big.Int) (uint8, error) {
+	return _Trade.Contract.GetOrderStatus(&_Trade.CallOpts, orderID)
+}
+
+// GetOrderTrustees is a free data retrieval call binding the contract method 0x1821bb82.
+//
+// Solidity: function getOrderTrustees(orderID uint80) constant returns(address[])
 func (_Trade *TradeCaller) GetOrderTrustees(opts *bind.CallOpts, orderID *big.Int) ([]common.Address, error) {
 	var (
 		ret0 = new([]common.Address)
@@ -224,23 +252,23 @@ func (_Trade *TradeCaller) GetOrderTrustees(opts *bind.CallOpts, orderID *big.In
 	return *ret0, err
 }
 
-// GetOrderTrustees is a free data retrieval call binding the contract method 0x9d5bd1d7.
+// GetOrderTrustees is a free data retrieval call binding the contract method 0x1821bb82.
 //
-// Solidity: function getOrderTrustees(orderID uint256) constant returns(address[])
+// Solidity: function getOrderTrustees(orderID uint80) constant returns(address[])
 func (_Trade *TradeSession) GetOrderTrustees(orderID *big.Int) ([]common.Address, error) {
 	return _Trade.Contract.GetOrderTrustees(&_Trade.CallOpts, orderID)
 }
 
-// GetOrderTrustees is a free data retrieval call binding the contract method 0x9d5bd1d7.
+// GetOrderTrustees is a free data retrieval call binding the contract method 0x1821bb82.
 //
-// Solidity: function getOrderTrustees(orderID uint256) constant returns(address[])
+// Solidity: function getOrderTrustees(orderID uint80) constant returns(address[])
 func (_Trade *TradeCallerSession) GetOrderTrustees(orderID *big.Int) ([]common.Address, error) {
 	return _Trade.Contract.GetOrderTrustees(&_Trade.CallOpts, orderID)
 }
 
-// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0x94ff3676.
+// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0xf3241e96.
 //
-// Solidity: function getPerFeeOfOrder(orderID uint256) constant returns(uint256)
+// Solidity: function getPerFeeOfOrder(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCaller) GetPerFeeOfOrder(opts *bind.CallOpts, orderID *big.Int) (*big.Int, error) {
 	var (
 		ret0 = new(*big.Int)
@@ -250,50 +278,50 @@ func (_Trade *TradeCaller) GetPerFeeOfOrder(opts *bind.CallOpts, orderID *big.In
 	return *ret0, err
 }
 
-// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0x94ff3676.
+// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0xf3241e96.
 //
-// Solidity: function getPerFeeOfOrder(orderID uint256) constant returns(uint256)
+// Solidity: function getPerFeeOfOrder(orderID uint80) constant returns(uint256)
 func (_Trade *TradeSession) GetPerFeeOfOrder(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetPerFeeOfOrder(&_Trade.CallOpts, orderID)
 }
 
-// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0x94ff3676.
+// GetPerFeeOfOrder is a free data retrieval call binding the contract method 0xf3241e96.
 //
-// Solidity: function getPerFeeOfOrder(orderID uint256) constant returns(uint256)
+// Solidity: function getPerFeeOfOrder(orderID uint80) constant returns(uint256)
 func (_Trade *TradeCallerSession) GetPerFeeOfOrder(orderID *big.Int) (*big.Int, error) {
 	return _Trade.Contract.GetPerFeeOfOrder(&_Trade.CallOpts, orderID)
 }
 
-// GetRequester is a free data retrieval call binding the contract method 0x99c6679d.
+// GetRequester is a free data retrieval call binding the contract method 0x0fc9afaf.
 //
-// Solidity: function getRequester(orderID uint256) constant returns(uint256)
-func (_Trade *TradeCaller) GetRequester(opts *bind.CallOpts, orderID *big.Int) (*big.Int, error) {
+// Solidity: function getRequester(orderID uint80) constant returns(uint32)
+func (_Trade *TradeCaller) GetRequester(opts *bind.CallOpts, orderID *big.Int) (uint32, error) {
 	var (
-		ret0 = new(*big.Int)
+		ret0 = new(uint32)
 	)
 	out := ret0
 	err := _Trade.contract.Call(opts, out, "getRequester", orderID)
 	return *ret0, err
 }
 
-// GetRequester is a free data retrieval call binding the contract method 0x99c6679d.
+// GetRequester is a free data retrieval call binding the contract method 0x0fc9afaf.
 //
-// Solidity: function getRequester(orderID uint256) constant returns(uint256)
-func (_Trade *TradeSession) GetRequester(orderID *big.Int) (*big.Int, error) {
+// Solidity: function getRequester(orderID uint80) constant returns(uint32)
+func (_Trade *TradeSession) GetRequester(orderID *big.Int) (uint32, error) {
 	return _Trade.Contract.GetRequester(&_Trade.CallOpts, orderID)
 }
 
-// GetRequester is a free data retrieval call binding the contract method 0x99c6679d.
+// GetRequester is a free data retrieval call binding the contract method 0x0fc9afaf.
 //
-// Solidity: function getRequester(orderID uint256) constant returns(uint256)
-func (_Trade *TradeCallerSession) GetRequester(orderID *big.Int) (*big.Int, error) {
+// Solidity: function getRequester(orderID uint80) constant returns(uint32)
+func (_Trade *TradeCallerSession) GetRequester(orderID *big.Int) (uint32, error) {
 	return _Trade.Contract.GetRequester(&_Trade.CallOpts, orderID)
 }
 
-// GetSecret is a free data retrieval call binding the contract method 0x3e36f2b1.
+// GetSecret is a free data retrieval call binding the contract method 0xfd748b90.
 //
-// Solidity: function getSecret(orderID uint256, trusteeID address, user uint256) constant returns(string)
-func (_Trade *TradeCaller) GetSecret(opts *bind.CallOpts, orderID *big.Int, trusteeID common.Address, user *big.Int) (string, error) {
+// Solidity: function getSecret(orderID uint80, trusteeID address, user uint32) constant returns(string)
+func (_Trade *TradeCaller) GetSecret(opts *bind.CallOpts, orderID *big.Int, trusteeID common.Address, user uint32) (string, error) {
 	var (
 		ret0 = new(string)
 	)
@@ -302,43 +330,69 @@ func (_Trade *TradeCaller) GetSecret(opts *bind.CallOpts, orderID *big.Int, trus
 	return *ret0, err
 }
 
-// GetSecret is a free data retrieval call binding the contract method 0x3e36f2b1.
+// GetSecret is a free data retrieval call binding the contract method 0xfd748b90.
 //
-// Solidity: function getSecret(orderID uint256, trusteeID address, user uint256) constant returns(string)
-func (_Trade *TradeSession) GetSecret(orderID *big.Int, trusteeID common.Address, user *big.Int) (string, error) {
+// Solidity: function getSecret(orderID uint80, trusteeID address, user uint32) constant returns(string)
+func (_Trade *TradeSession) GetSecret(orderID *big.Int, trusteeID common.Address, user uint32) (string, error) {
 	return _Trade.Contract.GetSecret(&_Trade.CallOpts, orderID, trusteeID, user)
 }
 
-// GetSecret is a free data retrieval call binding the contract method 0x3e36f2b1.
+// GetSecret is a free data retrieval call binding the contract method 0xfd748b90.
 //
-// Solidity: function getSecret(orderID uint256, trusteeID address, user uint256) constant returns(string)
-func (_Trade *TradeCallerSession) GetSecret(orderID *big.Int, trusteeID common.Address, user *big.Int) (string, error) {
+// Solidity: function getSecret(orderID uint80, trusteeID address, user uint32) constant returns(string)
+func (_Trade *TradeCallerSession) GetSecret(orderID *big.Int, trusteeID common.Address, user uint32) (string, error) {
 	return _Trade.Contract.GetSecret(&_Trade.CallOpts, orderID, trusteeID, user)
 }
 
-// GetWinner is a free data retrieval call binding the contract method 0x4129b2c9.
+// GetVerifyData is a free data retrieval call binding the contract method 0x465be783.
 //
-// Solidity: function getWinner(orderID uint256) constant returns(uint256)
-func (_Trade *TradeCaller) GetWinner(opts *bind.CallOpts, orderID *big.Int) (*big.Int, error) {
+// Solidity: function getVerifyData(orderID uint80, user uint32) constant returns(string)
+func (_Trade *TradeCaller) GetVerifyData(opts *bind.CallOpts, orderID *big.Int, user uint32) (string, error) {
 	var (
-		ret0 = new(*big.Int)
+		ret0 = new(string)
+	)
+	out := ret0
+	err := _Trade.contract.Call(opts, out, "getVerifyData", orderID, user)
+	return *ret0, err
+}
+
+// GetVerifyData is a free data retrieval call binding the contract method 0x465be783.
+//
+// Solidity: function getVerifyData(orderID uint80, user uint32) constant returns(string)
+func (_Trade *TradeSession) GetVerifyData(orderID *big.Int, user uint32) (string, error) {
+	return _Trade.Contract.GetVerifyData(&_Trade.CallOpts, orderID, user)
+}
+
+// GetVerifyData is a free data retrieval call binding the contract method 0x465be783.
+//
+// Solidity: function getVerifyData(orderID uint80, user uint32) constant returns(string)
+func (_Trade *TradeCallerSession) GetVerifyData(orderID *big.Int, user uint32) (string, error) {
+	return _Trade.Contract.GetVerifyData(&_Trade.CallOpts, orderID, user)
+}
+
+// GetWinner is a free data retrieval call binding the contract method 0xac364eae.
+//
+// Solidity: function getWinner(orderID uint80) constant returns(uint32)
+func (_Trade *TradeCaller) GetWinner(opts *bind.CallOpts, orderID *big.Int) (uint32, error) {
+	var (
+		ret0 = new(uint32)
 	)
 	out := ret0
 	err := _Trade.contract.Call(opts, out, "getWinner", orderID)
 	return *ret0, err
 }
 
-// GetWinner is a free data retrieval call binding the contract method 0x4129b2c9.
+// GetWinner is a free data retrieval call binding the contract method 0xac364eae.
 //
-// Solidity: function getWinner(orderID uint256) constant returns(uint256)
-func (_Trade *TradeSession) GetWinner(orderID *big.Int) (*big.Int, error) {
+// Solidity: function getWinner(orderID uint80) constant returns(uint32)
+func (_Trade *TradeSession) GetWinner(orderID *big.Int) (uint32, error) {
 	return _Trade.Contract.GetWinner(&_Trade.CallOpts, orderID)
 }
 
-// GetWinner is a free data retrieval call binding the contract method 0x4129b2c9.
+// GetWinner is a free data retrieval call binding the contract method 0xac364eae.
 //
-// Solidity: function getWinner(orderID uint256) constant returns(uint256)
-func (_Trade *TradeCallerSession) GetWinner(orderID *big.Int) (*big.Int, error) {
+// Solidity: function getWinner(orderID uint80) constant returns(uint32)
+func (_Trade *TradeCallerSession) GetWinner(orderID *big.Int) (uint32, error) {
 	return _Trade.Contract.GetWinner(&_Trade.CallOpts, orderID)
 }
 
@@ -368,9 +422,9 @@ func (_Trade *TradeCallerSession) IsArbitrator(who common.Address) (bool, error)
 	return _Trade.Contract.IsArbitrator(&_Trade.CallOpts, who)
 }
 
-// IsOrderTrustee is a free data retrieval call binding the contract method 0xee724e20.
+// IsOrderTrustee is a free data retrieval call binding the contract method 0x08903cf8.
 //
-// Solidity: function isOrderTrustee(orderID uint256, user address) constant returns(bool)
+// Solidity: function isOrderTrustee(orderID uint80, user address) constant returns(bool)
 func (_Trade *TradeCaller) IsOrderTrustee(opts *bind.CallOpts, orderID *big.Int, user common.Address) (bool, error) {
 	var (
 		ret0 = new(bool)
@@ -380,16 +434,16 @@ func (_Trade *TradeCaller) IsOrderTrustee(opts *bind.CallOpts, orderID *big.Int,
 	return *ret0, err
 }
 
-// IsOrderTrustee is a free data retrieval call binding the contract method 0xee724e20.
+// IsOrderTrustee is a free data retrieval call binding the contract method 0x08903cf8.
 //
-// Solidity: function isOrderTrustee(orderID uint256, user address) constant returns(bool)
+// Solidity: function isOrderTrustee(orderID uint80, user address) constant returns(bool)
 func (_Trade *TradeSession) IsOrderTrustee(orderID *big.Int, user common.Address) (bool, error) {
 	return _Trade.Contract.IsOrderTrustee(&_Trade.CallOpts, orderID, user)
 }
 
-// IsOrderTrustee is a free data retrieval call binding the contract method 0xee724e20.
+// IsOrderTrustee is a free data retrieval call binding the contract method 0x08903cf8.
 //
-// Solidity: function isOrderTrustee(orderID uint256, user address) constant returns(bool)
+// Solidity: function isOrderTrustee(orderID uint80, user address) constant returns(bool)
 func (_Trade *TradeCallerSession) IsOrderTrustee(orderID *big.Int, user common.Address) (bool, error) {
 	return _Trade.Contract.IsOrderTrustee(&_Trade.CallOpts, orderID, user)
 }
@@ -420,6 +474,32 @@ func (_Trade *TradeCallerSession) Owner() (common.Address, error) {
 	return _Trade.Contract.Owner(&_Trade.CallOpts)
 }
 
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() constant returns(bool)
+func (_Trade *TradeCaller) Paused(opts *bind.CallOpts) (bool, error) {
+	var (
+		ret0 = new(bool)
+	)
+	out := ret0
+	err := _Trade.contract.Call(opts, out, "paused")
+	return *ret0, err
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() constant returns(bool)
+func (_Trade *TradeSession) Paused() (bool, error) {
+	return _Trade.Contract.Paused(&_Trade.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() constant returns(bool)
+func (_Trade *TradeCallerSession) Paused() (bool, error) {
+	return _Trade.Contract.Paused(&_Trade.CallOpts)
+}
+
 // TrusteeContract is a free data retrieval call binding the contract method 0xbb133331.
 //
 // Solidity: function trusteeContract() constant returns(address)
@@ -448,10 +528,10 @@ func (_Trade *TradeCallerSession) TrusteeContract() (common.Address, error) {
 
 // TrusteeNumber is a free data retrieval call binding the contract method 0x044f4a4e.
 //
-// Solidity: function trusteeNumber() constant returns(uint256)
-func (_Trade *TradeCaller) TrusteeNumber(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function trusteeNumber() constant returns(uint8)
+func (_Trade *TradeCaller) TrusteeNumber(opts *bind.CallOpts) (uint8, error) {
 	var (
-		ret0 = new(*big.Int)
+		ret0 = new(uint8)
 	)
 	out := ret0
 	err := _Trade.contract.Call(opts, out, "trusteeNumber")
@@ -460,15 +540,15 @@ func (_Trade *TradeCaller) TrusteeNumber(opts *bind.CallOpts) (*big.Int, error) 
 
 // TrusteeNumber is a free data retrieval call binding the contract method 0x044f4a4e.
 //
-// Solidity: function trusteeNumber() constant returns(uint256)
-func (_Trade *TradeSession) TrusteeNumber() (*big.Int, error) {
+// Solidity: function trusteeNumber() constant returns(uint8)
+func (_Trade *TradeSession) TrusteeNumber() (uint8, error) {
 	return _Trade.Contract.TrusteeNumber(&_Trade.CallOpts)
 }
 
 // TrusteeNumber is a free data retrieval call binding the contract method 0x044f4a4e.
 //
-// Solidity: function trusteeNumber() constant returns(uint256)
-func (_Trade *TradeCallerSession) TrusteeNumber() (*big.Int, error) {
+// Solidity: function trusteeNumber() constant returns(uint8)
+func (_Trade *TradeCallerSession) TrusteeNumber() (uint8, error) {
 	return _Trade.Contract.TrusteeNumber(&_Trade.CallOpts)
 }
 
@@ -493,130 +573,151 @@ func (_Trade *TradeTransactorSession) AddArbitrator(who common.Address) (*types.
 	return _Trade.Contract.AddArbitrator(&_Trade.TransactOpts, who)
 }
 
-// Arbitrate is a paid mutator transaction binding the contract method 0x97a33e88.
+// Arbitrate is a paid mutator transaction binding the contract method 0xfacf2dd7.
 //
-// Solidity: function arbitrate(orderID uint256, user uint256) returns(bool)
-func (_Trade *TradeTransactor) Arbitrate(opts *bind.TransactOpts, orderID *big.Int, user *big.Int) (*types.Transaction, error) {
+// Solidity: function arbitrate(orderID uint80, user uint32) returns(bool)
+func (_Trade *TradeTransactor) Arbitrate(opts *bind.TransactOpts, orderID *big.Int, user uint32) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "arbitrate", orderID, user)
 }
 
-// Arbitrate is a paid mutator transaction binding the contract method 0x97a33e88.
+// Arbitrate is a paid mutator transaction binding the contract method 0xfacf2dd7.
 //
-// Solidity: function arbitrate(orderID uint256, user uint256) returns(bool)
-func (_Trade *TradeSession) Arbitrate(orderID *big.Int, user *big.Int) (*types.Transaction, error) {
+// Solidity: function arbitrate(orderID uint80, user uint32) returns(bool)
+func (_Trade *TradeSession) Arbitrate(orderID *big.Int, user uint32) (*types.Transaction, error) {
 	return _Trade.Contract.Arbitrate(&_Trade.TransactOpts, orderID, user)
 }
 
-// Arbitrate is a paid mutator transaction binding the contract method 0x97a33e88.
+// Arbitrate is a paid mutator transaction binding the contract method 0xfacf2dd7.
 //
-// Solidity: function arbitrate(orderID uint256, user uint256) returns(bool)
-func (_Trade *TradeTransactorSession) Arbitrate(orderID *big.Int, user *big.Int) (*types.Transaction, error) {
+// Solidity: function arbitrate(orderID uint80, user uint32) returns(bool)
+func (_Trade *TradeTransactorSession) Arbitrate(orderID *big.Int, user uint32) (*types.Transaction, error) {
 	return _Trade.Contract.Arbitrate(&_Trade.TransactOpts, orderID, user)
 }
 
-// CancelTrade is a paid mutator transaction binding the contract method 0x64339dbf.
+// CancelTrade is a paid mutator transaction binding the contract method 0xce36d79b.
 //
-// Solidity: function cancelTrade(orderID uint256, createUserID uint256) returns(bool)
-func (_Trade *TradeTransactor) CancelTrade(opts *bind.TransactOpts, orderID *big.Int, createUserID *big.Int) (*types.Transaction, error) {
+// Solidity: function cancelTrade(orderID uint80, createUserID uint32) returns(bool)
+func (_Trade *TradeTransactor) CancelTrade(opts *bind.TransactOpts, orderID *big.Int, createUserID uint32) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "cancelTrade", orderID, createUserID)
 }
 
-// CancelTrade is a paid mutator transaction binding the contract method 0x64339dbf.
+// CancelTrade is a paid mutator transaction binding the contract method 0xce36d79b.
 //
-// Solidity: function cancelTrade(orderID uint256, createUserID uint256) returns(bool)
-func (_Trade *TradeSession) CancelTrade(orderID *big.Int, createUserID *big.Int) (*types.Transaction, error) {
+// Solidity: function cancelTrade(orderID uint80, createUserID uint32) returns(bool)
+func (_Trade *TradeSession) CancelTrade(orderID *big.Int, createUserID uint32) (*types.Transaction, error) {
 	return _Trade.Contract.CancelTrade(&_Trade.TransactOpts, orderID, createUserID)
 }
 
-// CancelTrade is a paid mutator transaction binding the contract method 0x64339dbf.
+// CancelTrade is a paid mutator transaction binding the contract method 0xce36d79b.
 //
-// Solidity: function cancelTrade(orderID uint256, createUserID uint256) returns(bool)
-func (_Trade *TradeTransactorSession) CancelTrade(orderID *big.Int, createUserID *big.Int) (*types.Transaction, error) {
+// Solidity: function cancelTrade(orderID uint80, createUserID uint32) returns(bool)
+func (_Trade *TradeTransactorSession) CancelTrade(orderID *big.Int, createUserID uint32) (*types.Transaction, error) {
 	return _Trade.Contract.CancelTrade(&_Trade.TransactOpts, orderID, createUserID)
 }
 
-// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0xc2893232.
+// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0x6f9e0b40.
 //
-// Solidity: function confirmTradeOrder(orderID uint256, userID uint256) returns(bool)
-func (_Trade *TradeTransactor) ConfirmTradeOrder(opts *bind.TransactOpts, orderID *big.Int, userID *big.Int) (*types.Transaction, error) {
+// Solidity: function confirmTradeOrder(orderID uint80, userID uint32) returns(bool)
+func (_Trade *TradeTransactor) ConfirmTradeOrder(opts *bind.TransactOpts, orderID *big.Int, userID uint32) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "confirmTradeOrder", orderID, userID)
 }
 
-// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0xc2893232.
+// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0x6f9e0b40.
 //
-// Solidity: function confirmTradeOrder(orderID uint256, userID uint256) returns(bool)
-func (_Trade *TradeSession) ConfirmTradeOrder(orderID *big.Int, userID *big.Int) (*types.Transaction, error) {
+// Solidity: function confirmTradeOrder(orderID uint80, userID uint32) returns(bool)
+func (_Trade *TradeSession) ConfirmTradeOrder(orderID *big.Int, userID uint32) (*types.Transaction, error) {
 	return _Trade.Contract.ConfirmTradeOrder(&_Trade.TransactOpts, orderID, userID)
 }
 
-// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0xc2893232.
+// ConfirmTradeOrder is a paid mutator transaction binding the contract method 0x6f9e0b40.
 //
-// Solidity: function confirmTradeOrder(orderID uint256, userID uint256) returns(bool)
-func (_Trade *TradeTransactorSession) ConfirmTradeOrder(orderID *big.Int, userID *big.Int) (*types.Transaction, error) {
+// Solidity: function confirmTradeOrder(orderID uint80, userID uint32) returns(bool)
+func (_Trade *TradeTransactorSession) ConfirmTradeOrder(orderID *big.Int, userID uint32) (*types.Transaction, error) {
 	return _Trade.Contract.ConfirmTradeOrder(&_Trade.TransactOpts, orderID, userID)
 }
 
-// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xe5fb9daa.
+// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xff06a28c.
 //
-// Solidity: function createNewTradeOrder(orderID uint256, userID uint256, userType uint8) returns(bool)
-func (_Trade *TradeTransactor) CreateNewTradeOrder(opts *bind.TransactOpts, orderID *big.Int, userID *big.Int, userType uint8) (*types.Transaction, error) {
+// Solidity: function createNewTradeOrder(orderID uint80, userID uint32, userType uint8) returns(bool)
+func (_Trade *TradeTransactor) CreateNewTradeOrder(opts *bind.TransactOpts, orderID *big.Int, userID uint32, userType uint8) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "createNewTradeOrder", orderID, userID, userType)
 }
 
-// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xe5fb9daa.
+// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xff06a28c.
 //
-// Solidity: function createNewTradeOrder(orderID uint256, userID uint256, userType uint8) returns(bool)
-func (_Trade *TradeSession) CreateNewTradeOrder(orderID *big.Int, userID *big.Int, userType uint8) (*types.Transaction, error) {
+// Solidity: function createNewTradeOrder(orderID uint80, userID uint32, userType uint8) returns(bool)
+func (_Trade *TradeSession) CreateNewTradeOrder(orderID *big.Int, userID uint32, userType uint8) (*types.Transaction, error) {
 	return _Trade.Contract.CreateNewTradeOrder(&_Trade.TransactOpts, orderID, userID, userType)
 }
 
-// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xe5fb9daa.
+// CreateNewTradeOrder is a paid mutator transaction binding the contract method 0xff06a28c.
 //
-// Solidity: function createNewTradeOrder(orderID uint256, userID uint256, userType uint8) returns(bool)
-func (_Trade *TradeTransactorSession) CreateNewTradeOrder(orderID *big.Int, userID *big.Int, userType uint8) (*types.Transaction, error) {
+// Solidity: function createNewTradeOrder(orderID uint80, userID uint32, userType uint8) returns(bool)
+func (_Trade *TradeTransactorSession) CreateNewTradeOrder(orderID *big.Int, userID uint32, userType uint8) (*types.Transaction, error) {
 	return _Trade.Contract.CreateNewTradeOrder(&_Trade.TransactOpts, orderID, userID, userType)
 }
 
-// FinishOrder is a paid mutator transaction binding the contract method 0xf012be38.
+// FinishOrder is a paid mutator transaction binding the contract method 0x27acb487.
 //
-// Solidity: function finishOrder(orderID uint256) returns(bool)
+// Solidity: function finishOrder(orderID uint80) returns(bool)
 func (_Trade *TradeTransactor) FinishOrder(opts *bind.TransactOpts, orderID *big.Int) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "finishOrder", orderID)
 }
 
-// FinishOrder is a paid mutator transaction binding the contract method 0xf012be38.
+// FinishOrder is a paid mutator transaction binding the contract method 0x27acb487.
 //
-// Solidity: function finishOrder(orderID uint256) returns(bool)
+// Solidity: function finishOrder(orderID uint80) returns(bool)
 func (_Trade *TradeSession) FinishOrder(orderID *big.Int) (*types.Transaction, error) {
 	return _Trade.Contract.FinishOrder(&_Trade.TransactOpts, orderID)
 }
 
-// FinishOrder is a paid mutator transaction binding the contract method 0xf012be38.
+// FinishOrder is a paid mutator transaction binding the contract method 0x27acb487.
 //
-// Solidity: function finishOrder(orderID uint256) returns(bool)
+// Solidity: function finishOrder(orderID uint80) returns(bool)
 func (_Trade *TradeTransactorSession) FinishOrder(orderID *big.Int) (*types.Transaction, error) {
 	return _Trade.Contract.FinishOrder(&_Trade.TransactOpts, orderID)
 }
 
-// Judge is a paid mutator transaction binding the contract method 0x5abcbc51.
+// Judge is a paid mutator transaction binding the contract method 0x98f3fafa.
 //
-// Solidity: function judge(orderID uint256, winner uint256) returns(bool)
-func (_Trade *TradeTransactor) Judge(opts *bind.TransactOpts, orderID *big.Int, winner *big.Int) (*types.Transaction, error) {
+// Solidity: function judge(orderID uint80, winner uint32) returns(bool)
+func (_Trade *TradeTransactor) Judge(opts *bind.TransactOpts, orderID *big.Int, winner uint32) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "judge", orderID, winner)
 }
 
-// Judge is a paid mutator transaction binding the contract method 0x5abcbc51.
+// Judge is a paid mutator transaction binding the contract method 0x98f3fafa.
 //
-// Solidity: function judge(orderID uint256, winner uint256) returns(bool)
-func (_Trade *TradeSession) Judge(orderID *big.Int, winner *big.Int) (*types.Transaction, error) {
+// Solidity: function judge(orderID uint80, winner uint32) returns(bool)
+func (_Trade *TradeSession) Judge(orderID *big.Int, winner uint32) (*types.Transaction, error) {
 	return _Trade.Contract.Judge(&_Trade.TransactOpts, orderID, winner)
 }
 
-// Judge is a paid mutator transaction binding the contract method 0x5abcbc51.
+// Judge is a paid mutator transaction binding the contract method 0x98f3fafa.
 //
-// Solidity: function judge(orderID uint256, winner uint256) returns(bool)
-func (_Trade *TradeTransactorSession) Judge(orderID *big.Int, winner *big.Int) (*types.Transaction, error) {
+// Solidity: function judge(orderID uint80, winner uint32) returns(bool)
+func (_Trade *TradeTransactorSession) Judge(orderID *big.Int, winner uint32) (*types.Transaction, error) {
 	return _Trade.Contract.Judge(&_Trade.TransactOpts, orderID, winner)
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_Trade *TradeTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Trade.contract.Transact(opts, "pause")
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_Trade *TradeSession) Pause() (*types.Transaction, error) {
+	return _Trade.Contract.Pause(&_Trade.TransactOpts)
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_Trade *TradeTransactorSession) Pause() (*types.Transaction, error) {
+	return _Trade.Contract.Pause(&_Trade.TransactOpts)
 }
 
 // RemoveArbitrator is a paid mutator transaction binding the contract method 0x973ad270.
@@ -661,6 +762,27 @@ func (_Trade *TradeTransactorSession) RenounceOwnership() (*types.Transaction, e
 	return _Trade.Contract.RenounceOwnership(&_Trade.TransactOpts)
 }
 
+// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
+//
+// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
+func (_Trade *TradeTransactor) SendVerifyResult(opts *bind.TransactOpts, orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
+	return _Trade.contract.Transact(opts, "sendVerifyResult", orderID, buyerResult, sellerResult)
+}
+
+// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
+//
+// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
+func (_Trade *TradeSession) SendVerifyResult(orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
+	return _Trade.Contract.SendVerifyResult(&_Trade.TransactOpts, orderID, buyerResult, sellerResult)
+}
+
+// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
+//
+// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
+func (_Trade *TradeTransactorSession) SendVerifyResult(orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
+	return _Trade.Contract.SendVerifyResult(&_Trade.TransactOpts, orderID, buyerResult, sellerResult)
+}
+
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(newOwner address) returns()
@@ -682,24 +804,45 @@ func (_Trade *TradeTransactorSession) TransferOwnership(newOwner common.Address)
 	return _Trade.Contract.TransferOwnership(&_Trade.TransactOpts, newOwner)
 }
 
-// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0x863457b7.
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
 //
-// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint256) returns(bool)
-func (_Trade *TradeTransactor) UpdateDefaultTrusteeNumber(opts *bind.TransactOpts, _trusteeNumber *big.Int) (*types.Transaction, error) {
+// Solidity: function unpause() returns()
+func (_Trade *TradeTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Trade.contract.Transact(opts, "unpause")
+}
+
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
+//
+// Solidity: function unpause() returns()
+func (_Trade *TradeSession) Unpause() (*types.Transaction, error) {
+	return _Trade.Contract.Unpause(&_Trade.TransactOpts)
+}
+
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
+//
+// Solidity: function unpause() returns()
+func (_Trade *TradeTransactorSession) Unpause() (*types.Transaction, error) {
+	return _Trade.Contract.Unpause(&_Trade.TransactOpts)
+}
+
+// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0xdd080e87.
+//
+// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint8) returns(bool)
+func (_Trade *TradeTransactor) UpdateDefaultTrusteeNumber(opts *bind.TransactOpts, _trusteeNumber uint8) (*types.Transaction, error) {
 	return _Trade.contract.Transact(opts, "updateDefaultTrusteeNumber", _trusteeNumber)
 }
 
-// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0x863457b7.
+// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0xdd080e87.
 //
-// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint256) returns(bool)
-func (_Trade *TradeSession) UpdateDefaultTrusteeNumber(_trusteeNumber *big.Int) (*types.Transaction, error) {
+// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint8) returns(bool)
+func (_Trade *TradeSession) UpdateDefaultTrusteeNumber(_trusteeNumber uint8) (*types.Transaction, error) {
 	return _Trade.Contract.UpdateDefaultTrusteeNumber(&_Trade.TransactOpts, _trusteeNumber)
 }
 
-// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0x863457b7.
+// UpdateDefaultTrusteeNumber is a paid mutator transaction binding the contract method 0xdd080e87.
 //
-// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint256) returns(bool)
-func (_Trade *TradeTransactorSession) UpdateDefaultTrusteeNumber(_trusteeNumber *big.Int) (*types.Transaction, error) {
+// Solidity: function updateDefaultTrusteeNumber(_trusteeNumber uint8) returns(bool)
+func (_Trade *TradeTransactorSession) UpdateDefaultTrusteeNumber(_trusteeNumber uint8) (*types.Transaction, error) {
 	return _Trade.Contract.UpdateDefaultTrusteeNumber(&_Trade.TransactOpts, _trusteeNumber)
 }
 
@@ -724,25 +867,25 @@ func (_Trade *TradeTransactorSession) UpdateTrusteeContract(_trustee common.Addr
 	return _Trade.Contract.UpdateTrusteeContract(&_Trade.TransactOpts, _trustee)
 }
 
-// UploadSecret is a paid mutator transaction binding the contract method 0xdde9f924.
+// UploadSecret is a paid mutator transaction binding the contract method 0x0a7db658.
 //
-// Solidity: function uploadSecret(orderID uint256, secrets string, userID uint256) returns(bool)
-func (_Trade *TradeTransactor) UploadSecret(opts *bind.TransactOpts, orderID *big.Int, secrets string, userID *big.Int) (*types.Transaction, error) {
-	return _Trade.contract.Transact(opts, "uploadSecret", orderID, secrets, userID)
+// Solidity: function uploadSecret(orderID uint80, secrets string, userID uint32, verifyData string) returns(bool)
+func (_Trade *TradeTransactor) UploadSecret(opts *bind.TransactOpts, orderID *big.Int, secrets string, userID uint32, verifyData string) (*types.Transaction, error) {
+	return _Trade.contract.Transact(opts, "uploadSecret", orderID, secrets, userID, verifyData)
 }
 
-// UploadSecret is a paid mutator transaction binding the contract method 0xdde9f924.
+// UploadSecret is a paid mutator transaction binding the contract method 0x0a7db658.
 //
-// Solidity: function uploadSecret(orderID uint256, secrets string, userID uint256) returns(bool)
-func (_Trade *TradeSession) UploadSecret(orderID *big.Int, secrets string, userID *big.Int) (*types.Transaction, error) {
-	return _Trade.Contract.UploadSecret(&_Trade.TransactOpts, orderID, secrets, userID)
+// Solidity: function uploadSecret(orderID uint80, secrets string, userID uint32, verifyData string) returns(bool)
+func (_Trade *TradeSession) UploadSecret(orderID *big.Int, secrets string, userID uint32, verifyData string) (*types.Transaction, error) {
+	return _Trade.Contract.UploadSecret(&_Trade.TransactOpts, orderID, secrets, userID, verifyData)
 }
 
-// UploadSecret is a paid mutator transaction binding the contract method 0xdde9f924.
+// UploadSecret is a paid mutator transaction binding the contract method 0x0a7db658.
 //
-// Solidity: function uploadSecret(orderID uint256, secrets string, userID uint256) returns(bool)
-func (_Trade *TradeTransactorSession) UploadSecret(orderID *big.Int, secrets string, userID *big.Int) (*types.Transaction, error) {
-	return _Trade.Contract.UploadSecret(&_Trade.TransactOpts, orderID, secrets, userID)
+// Solidity: function uploadSecret(orderID uint80, secrets string, userID uint32, verifyData string) returns(bool)
+func (_Trade *TradeTransactorSession) UploadSecret(orderID *big.Int, secrets string, userID uint32, verifyData string) (*types.Transaction, error) {
+	return _Trade.Contract.UploadSecret(&_Trade.TransactOpts, orderID, secrets, userID, verifyData)
 }
 
 // WithdrawFee is a paid mutator transaction binding the contract method 0xe941fa78.
@@ -968,14 +1111,14 @@ func (it *TradeArbitrateIterator) Close() error {
 // TradeArbitrate represents a Arbitrate event raised by the Trade contract.
 type TradeArbitrate struct {
 	OrderID *big.Int
-	User    *big.Int
+	User    uint32
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterArbitrate is a free log retrieval operation binding the contract event 0xca7a894485c8732d3fb8c51d75f9bd5d60116afe2c5a90aca9a99e9f0b9afca8.
+// FilterArbitrate is a free log retrieval operation binding the contract event 0x1091687dccfb26b1f39c83752f98f95d7220fd8aeedcc9cea7d8c312af711cc1.
 //
-// Solidity: e Arbitrate(orderID uint256, user indexed uint256)
-func (_Trade *TradeFilterer) FilterArbitrate(opts *bind.FilterOpts, user []*big.Int) (*TradeArbitrateIterator, error) {
+// Solidity: e Arbitrate(orderID uint80, user indexed uint32)
+func (_Trade *TradeFilterer) FilterArbitrate(opts *bind.FilterOpts, user []uint32) (*TradeArbitrateIterator, error) {
 
 	var userRule []interface{}
 	for _, userItem := range user {
@@ -989,10 +1132,10 @@ func (_Trade *TradeFilterer) FilterArbitrate(opts *bind.FilterOpts, user []*big.
 	return &TradeArbitrateIterator{contract: _Trade.contract, event: "Arbitrate", logs: logs, sub: sub}, nil
 }
 
-// WatchArbitrate is a free log subscription operation binding the contract event 0xca7a894485c8732d3fb8c51d75f9bd5d60116afe2c5a90aca9a99e9f0b9afca8.
+// WatchArbitrate is a free log subscription operation binding the contract event 0x1091687dccfb26b1f39c83752f98f95d7220fd8aeedcc9cea7d8c312af711cc1.
 //
-// Solidity: e Arbitrate(orderID uint256, user indexed uint256)
-func (_Trade *TradeFilterer) WatchArbitrate(opts *bind.WatchOpts, sink chan<- *TradeArbitrate, user []*big.Int) (event.Subscription, error) {
+// Solidity: e Arbitrate(orderID uint80, user indexed uint32)
+func (_Trade *TradeFilterer) WatchArbitrate(opts *bind.WatchOpts, sink chan<- *TradeArbitrate, user []uint32) (event.Subscription, error) {
 
 	var userRule []interface{}
 	for _, userItem := range user {
@@ -1101,15 +1244,15 @@ func (it *TradeJudgeIterator) Close() error {
 // TradeJudge represents a Judge event raised by the Trade contract.
 type TradeJudge struct {
 	OrderID *big.Int
-	Winner  *big.Int
+	Winner  uint32
 	Judge   common.Address
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterJudge is a free log retrieval operation binding the contract event 0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186.
+// FilterJudge is a free log retrieval operation binding the contract event 0x91cd4f1183722432c51b6df8de80eef3598ebc4ef71ce76150fd2c8e4ed9b092.
 //
-// Solidity: e Judge(orderID uint256, winner indexed uint256, judge indexed address)
-func (_Trade *TradeFilterer) FilterJudge(opts *bind.FilterOpts, winner []*big.Int, judge []common.Address) (*TradeJudgeIterator, error) {
+// Solidity: e Judge(orderID uint80, winner indexed uint32, judge indexed address)
+func (_Trade *TradeFilterer) FilterJudge(opts *bind.FilterOpts, winner []uint32, judge []common.Address) (*TradeJudgeIterator, error) {
 
 	var winnerRule []interface{}
 	for _, winnerItem := range winner {
@@ -1127,10 +1270,10 @@ func (_Trade *TradeFilterer) FilterJudge(opts *bind.FilterOpts, winner []*big.In
 	return &TradeJudgeIterator{contract: _Trade.contract, event: "Judge", logs: logs, sub: sub}, nil
 }
 
-// WatchJudge is a free log subscription operation binding the contract event 0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186.
+// WatchJudge is a free log subscription operation binding the contract event 0x91cd4f1183722432c51b6df8de80eef3598ebc4ef71ce76150fd2c8e4ed9b092.
 //
-// Solidity: e Judge(orderID uint256, winner indexed uint256, judge indexed address)
-func (_Trade *TradeFilterer) WatchJudge(opts *bind.WatchOpts, sink chan<- *TradeJudge, winner []*big.Int, judge []common.Address) (event.Subscription, error) {
+// Solidity: e Judge(orderID uint80, winner indexed uint32, judge indexed address)
+func (_Trade *TradeFilterer) WatchJudge(opts *bind.WatchOpts, sink chan<- *TradeJudge, winner []uint32, judge []common.Address) (event.Subscription, error) {
 
 	var winnerRule []interface{}
 	for _, winnerItem := range winner {
@@ -1247,9 +1390,9 @@ type TradeLogCancelTrade struct {
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterLogCancelTrade is a free log retrieval operation binding the contract event 0x3c4087999413dcdbaef5bd844641df15b3ca0247300aa64970c593eff175f344.
+// FilterLogCancelTrade is a free log retrieval operation binding the contract event 0x6e2a76d5e51755e0d0ead9415eb85f81de3e3024755a804f28728cf4c42adb1d.
 //
-// Solidity: e LogCancelTrade(orderID indexed uint256, creator indexed address)
+// Solidity: e LogCancelTrade(orderID indexed uint80, creator indexed address)
 func (_Trade *TradeFilterer) FilterLogCancelTrade(opts *bind.FilterOpts, orderID []*big.Int, creator []common.Address) (*TradeLogCancelTradeIterator, error) {
 
 	var orderIDRule []interface{}
@@ -1268,9 +1411,9 @@ func (_Trade *TradeFilterer) FilterLogCancelTrade(opts *bind.FilterOpts, orderID
 	return &TradeLogCancelTradeIterator{contract: _Trade.contract, event: "LogCancelTrade", logs: logs, sub: sub}, nil
 }
 
-// WatchLogCancelTrade is a free log subscription operation binding the contract event 0x3c4087999413dcdbaef5bd844641df15b3ca0247300aa64970c593eff175f344.
+// WatchLogCancelTrade is a free log subscription operation binding the contract event 0x6e2a76d5e51755e0d0ead9415eb85f81de3e3024755a804f28728cf4c42adb1d.
 //
-// Solidity: e LogCancelTrade(orderID indexed uint256, creator indexed address)
+// Solidity: e LogCancelTrade(orderID indexed uint80, creator indexed address)
 func (_Trade *TradeFilterer) WatchLogCancelTrade(opts *bind.WatchOpts, sink chan<- *TradeLogCancelTrade, orderID []*big.Int, creator []common.Address) (event.Subscription, error) {
 
 	var orderIDRule []interface{}
@@ -1384,16 +1527,16 @@ func (it *TradeLogConfirmTradeOrderIterator) Close() error {
 // TradeLogConfirmTradeOrder represents a LogConfirmTradeOrder event raised by the Trade contract.
 type TradeLogConfirmTradeOrder struct {
 	OrderID  *big.Int
-	User     *big.Int
+	User     uint32
 	Trustees []common.Address
 	FeePayed *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterLogConfirmTradeOrder is a free log retrieval operation binding the contract event 0x4ae485a448a65d94b758369122f4ca445def18b565687751f001f6255b49a441.
+// FilterLogConfirmTradeOrder is a free log retrieval operation binding the contract event 0xa6115165a89d929fa9c050d5546756b15c16b4cbf0ed66bd893c9209aff2db44.
 //
-// Solidity: e LogConfirmTradeOrder(orderID indexed uint256, user indexed uint256, trustees address[], feePayed uint256)
-func (_Trade *TradeFilterer) FilterLogConfirmTradeOrder(opts *bind.FilterOpts, orderID []*big.Int, user []*big.Int) (*TradeLogConfirmTradeOrderIterator, error) {
+// Solidity: e LogConfirmTradeOrder(orderID indexed uint80, user indexed uint32, trustees address[], feePayed uint256)
+func (_Trade *TradeFilterer) FilterLogConfirmTradeOrder(opts *bind.FilterOpts, orderID []*big.Int, user []uint32) (*TradeLogConfirmTradeOrderIterator, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -1411,10 +1554,10 @@ func (_Trade *TradeFilterer) FilterLogConfirmTradeOrder(opts *bind.FilterOpts, o
 	return &TradeLogConfirmTradeOrderIterator{contract: _Trade.contract, event: "LogConfirmTradeOrder", logs: logs, sub: sub}, nil
 }
 
-// WatchLogConfirmTradeOrder is a free log subscription operation binding the contract event 0x4ae485a448a65d94b758369122f4ca445def18b565687751f001f6255b49a441.
+// WatchLogConfirmTradeOrder is a free log subscription operation binding the contract event 0xa6115165a89d929fa9c050d5546756b15c16b4cbf0ed66bd893c9209aff2db44.
 //
-// Solidity: e LogConfirmTradeOrder(orderID indexed uint256, user indexed uint256, trustees address[], feePayed uint256)
-func (_Trade *TradeFilterer) WatchLogConfirmTradeOrder(opts *bind.WatchOpts, sink chan<- *TradeLogConfirmTradeOrder, orderID []*big.Int, user []*big.Int) (event.Subscription, error) {
+// Solidity: e LogConfirmTradeOrder(orderID indexed uint80, user indexed uint32, trustees address[], feePayed uint256)
+func (_Trade *TradeFilterer) WatchLogConfirmTradeOrder(opts *bind.WatchOpts, sink chan<- *TradeLogConfirmTradeOrder, orderID []*big.Int, user []uint32) (event.Subscription, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -1527,16 +1670,16 @@ func (it *TradeLogCreateOrderIterator) Close() error {
 // TradeLogCreateOrder represents a LogCreateOrder event raised by the Trade contract.
 type TradeLogCreateOrder struct {
 	OrderID  *big.Int
-	User     *big.Int
+	User     uint32
 	UserType uint8
 	FeePayed *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterLogCreateOrder is a free log retrieval operation binding the contract event 0xc4d6c21425350dbb55bd949ff6ef374a96d24ba3f50e0450735ee9a777523d9d.
+// FilterLogCreateOrder is a free log retrieval operation binding the contract event 0xe435d37c6b977d33a57d31d222155c537fde79601f1609f780be49c06d03c672.
 //
-// Solidity: e LogCreateOrder(orderID indexed uint256, user indexed uint256, userType uint8, feePayed uint256)
-func (_Trade *TradeFilterer) FilterLogCreateOrder(opts *bind.FilterOpts, orderID []*big.Int, user []*big.Int) (*TradeLogCreateOrderIterator, error) {
+// Solidity: e LogCreateOrder(orderID indexed uint80, user indexed uint32, userType uint8, feePayed uint256)
+func (_Trade *TradeFilterer) FilterLogCreateOrder(opts *bind.FilterOpts, orderID []*big.Int, user []uint32) (*TradeLogCreateOrderIterator, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -1554,10 +1697,10 @@ func (_Trade *TradeFilterer) FilterLogCreateOrder(opts *bind.FilterOpts, orderID
 	return &TradeLogCreateOrderIterator{contract: _Trade.contract, event: "LogCreateOrder", logs: logs, sub: sub}, nil
 }
 
-// WatchLogCreateOrder is a free log subscription operation binding the contract event 0xc4d6c21425350dbb55bd949ff6ef374a96d24ba3f50e0450735ee9a777523d9d.
+// WatchLogCreateOrder is a free log subscription operation binding the contract event 0xe435d37c6b977d33a57d31d222155c537fde79601f1609f780be49c06d03c672.
 //
-// Solidity: e LogCreateOrder(orderID indexed uint256, user indexed uint256, userType uint8, feePayed uint256)
-func (_Trade *TradeFilterer) WatchLogCreateOrder(opts *bind.WatchOpts, sink chan<- *TradeLogCreateOrder, orderID []*big.Int, user []*big.Int) (event.Subscription, error) {
+// Solidity: e LogCreateOrder(orderID indexed uint80, user indexed uint32, userType uint8, feePayed uint256)
+func (_Trade *TradeFilterer) WatchLogCreateOrder(opts *bind.WatchOpts, sink chan<- *TradeLogCreateOrder, orderID []*big.Int, user []uint32) (event.Subscription, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -1673,9 +1816,9 @@ type TradeLogFinishOrder struct {
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterLogFinishOrder is a free log retrieval operation binding the contract event 0xd64ff73c449b09efcc9189886182f50329a3ce579b3a560967795f28726eaf71.
+// FilterLogFinishOrder is a free log retrieval operation binding the contract event 0x5c31eea1382076853b0d0e7c4e8c4d8601bb83e9c07aeb582ae9a1fcd2928ebb.
 //
-// Solidity: e LogFinishOrder(orderID indexed uint256)
+// Solidity: e LogFinishOrder(orderID indexed uint80)
 func (_Trade *TradeFilterer) FilterLogFinishOrder(opts *bind.FilterOpts, orderID []*big.Int) (*TradeLogFinishOrderIterator, error) {
 
 	var orderIDRule []interface{}
@@ -1690,9 +1833,9 @@ func (_Trade *TradeFilterer) FilterLogFinishOrder(opts *bind.FilterOpts, orderID
 	return &TradeLogFinishOrderIterator{contract: _Trade.contract, event: "LogFinishOrder", logs: logs, sub: sub}, nil
 }
 
-// WatchLogFinishOrder is a free log subscription operation binding the contract event 0xd64ff73c449b09efcc9189886182f50329a3ce579b3a560967795f28726eaf71.
+// WatchLogFinishOrder is a free log subscription operation binding the contract event 0x5c31eea1382076853b0d0e7c4e8c4d8601bb83e9c07aeb582ae9a1fcd2928ebb.
 //
-// Solidity: e LogFinishOrder(orderID indexed uint256)
+// Solidity: e LogFinishOrder(orderID indexed uint80)
 func (_Trade *TradeFilterer) WatchLogFinishOrder(opts *bind.WatchOpts, sink chan<- *TradeLogFinishOrder, orderID []*big.Int) (event.Subscription, error) {
 
 	var orderIDRule []interface{}
@@ -2056,15 +2199,15 @@ func (it *TradeLogUploadSecretIterator) Close() error {
 // TradeLogUploadSecret represents a LogUploadSecret event raised by the Trade contract.
 type TradeLogUploadSecret struct {
 	OrderID *big.Int
-	User    *big.Int
+	User    uint32
 	Secrets string
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterLogUploadSecret is a free log retrieval operation binding the contract event 0x0f5db3f75b51f453af77d045a106926ea59f07d208ea8c765e62f6f4c039437c.
+// FilterLogUploadSecret is a free log retrieval operation binding the contract event 0x8a59d01dda427123e224b10a5103435e6a94ce386bd3d81052074263f9defce8.
 //
-// Solidity: e LogUploadSecret(orderID indexed uint256, user indexed uint256, secrets string)
-func (_Trade *TradeFilterer) FilterLogUploadSecret(opts *bind.FilterOpts, orderID []*big.Int, user []*big.Int) (*TradeLogUploadSecretIterator, error) {
+// Solidity: e LogUploadSecret(orderID indexed uint80, user indexed uint32, secrets string)
+func (_Trade *TradeFilterer) FilterLogUploadSecret(opts *bind.FilterOpts, orderID []*big.Int, user []uint32) (*TradeLogUploadSecretIterator, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -2082,10 +2225,10 @@ func (_Trade *TradeFilterer) FilterLogUploadSecret(opts *bind.FilterOpts, orderI
 	return &TradeLogUploadSecretIterator{contract: _Trade.contract, event: "LogUploadSecret", logs: logs, sub: sub}, nil
 }
 
-// WatchLogUploadSecret is a free log subscription operation binding the contract event 0x0f5db3f75b51f453af77d045a106926ea59f07d208ea8c765e62f6f4c039437c.
+// WatchLogUploadSecret is a free log subscription operation binding the contract event 0x8a59d01dda427123e224b10a5103435e6a94ce386bd3d81052074263f9defce8.
 //
-// Solidity: e LogUploadSecret(orderID indexed uint256, user indexed uint256, secrets string)
-func (_Trade *TradeFilterer) WatchLogUploadSecret(opts *bind.WatchOpts, sink chan<- *TradeLogUploadSecret, orderID []*big.Int, user []*big.Int) (event.Subscription, error) {
+// Solidity: e LogUploadSecret(orderID indexed uint80, user indexed uint32, secrets string)
+func (_Trade *TradeFilterer) WatchLogUploadSecret(opts *bind.WatchOpts, sink chan<- *TradeLogUploadSecret, orderID []*big.Int, user []uint32) (event.Subscription, error) {
 
 	var orderIDRule []interface{}
 	for _, orderIDItem := range orderID {
@@ -2108,6 +2251,140 @@ func (_Trade *TradeFilterer) WatchLogUploadSecret(opts *bind.WatchOpts, sink cha
 				// New log arrived, parse the event and forward to the user
 				event := new(TradeLogUploadSecret)
 				if err := _Trade.contract.UnpackLog(event, "LogUploadSecret", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// TradeLogVerifyResultIterator is returned from FilterLogVerifyResult and is used to iterate over the raw logs and unpacked data for LogVerifyResult events raised by the Trade contract.
+type TradeLogVerifyResultIterator struct {
+	Event *TradeLogVerifyResult // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *TradeLogVerifyResultIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(TradeLogVerifyResult)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(TradeLogVerifyResult)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *TradeLogVerifyResultIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *TradeLogVerifyResultIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// TradeLogVerifyResult represents a LogVerifyResult event raised by the Trade contract.
+type TradeLogVerifyResult struct {
+	Trustee      common.Address
+	BuyerResult  bool
+	SellerResult bool
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterLogVerifyResult is a free log retrieval operation binding the contract event 0x0727453506ca45d3abe727861f7ec4de1b2032eec141005f8bb63e31024bc132.
+//
+// Solidity: e LogVerifyResult(trustee indexed address, buyerResult bool, sellerResult bool)
+func (_Trade *TradeFilterer) FilterLogVerifyResult(opts *bind.FilterOpts, trustee []common.Address) (*TradeLogVerifyResultIterator, error) {
+
+	var trusteeRule []interface{}
+	for _, trusteeItem := range trustee {
+		trusteeRule = append(trusteeRule, trusteeItem)
+	}
+
+	logs, sub, err := _Trade.contract.FilterLogs(opts, "LogVerifyResult", trusteeRule)
+	if err != nil {
+		return nil, err
+	}
+	return &TradeLogVerifyResultIterator{contract: _Trade.contract, event: "LogVerifyResult", logs: logs, sub: sub}, nil
+}
+
+// WatchLogVerifyResult is a free log subscription operation binding the contract event 0x0727453506ca45d3abe727861f7ec4de1b2032eec141005f8bb63e31024bc132.
+//
+// Solidity: e LogVerifyResult(trustee indexed address, buyerResult bool, sellerResult bool)
+func (_Trade *TradeFilterer) WatchLogVerifyResult(opts *bind.WatchOpts, sink chan<- *TradeLogVerifyResult, trustee []common.Address) (event.Subscription, error) {
+
+	var trusteeRule []interface{}
+	for _, trusteeItem := range trustee {
+		trusteeRule = append(trusteeRule, trusteeItem)
+	}
+
+	logs, sub, err := _Trade.contract.WatchLogs(opts, "LogVerifyResult", trusteeRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(TradeLogVerifyResult)
+				if err := _Trade.contract.UnpackLog(event, "LogVerifyResult", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2534,6 +2811,127 @@ func (_Trade *TradeFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sin
 	}), nil
 }
 
+// TradePauseIterator is returned from FilterPause and is used to iterate over the raw logs and unpacked data for Pause events raised by the Trade contract.
+type TradePauseIterator struct {
+	Event *TradePause // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *TradePauseIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(TradePause)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(TradePause)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *TradePauseIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *TradePauseIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// TradePause represents a Pause event raised by the Trade contract.
+type TradePause struct {
+	Raw types.Log // Blockchain specific contextual infos
+}
+
+// FilterPause is a free log retrieval operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
+//
+// Solidity: e Pause()
+func (_Trade *TradeFilterer) FilterPause(opts *bind.FilterOpts) (*TradePauseIterator, error) {
+
+	logs, sub, err := _Trade.contract.FilterLogs(opts, "Pause")
+	if err != nil {
+		return nil, err
+	}
+	return &TradePauseIterator{contract: _Trade.contract, event: "Pause", logs: logs, sub: sub}, nil
+}
+
+// WatchPause is a free log subscription operation binding the contract event 0x6985a02210a168e66602d3235cb6db0e70f92b3ba4d376a33c0f3d9434bff625.
+//
+// Solidity: e Pause()
+func (_Trade *TradeFilterer) WatchPause(opts *bind.WatchOpts, sink chan<- *TradePause) (event.Subscription, error) {
+
+	logs, sub, err := _Trade.contract.WatchLogs(opts, "Pause")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(TradePause)
+				if err := _Trade.contract.UnpackLog(event, "Pause", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
 // TradeRemoveArbitratorIterator is returned from FilterRemoveArbitrator and is used to iterate over the raw logs and unpacked data for RemoveArbitrator events raised by the Trade contract.
 type TradeRemoveArbitratorIterator struct {
 	Event *TradeRemoveArbitrator // Event containing the contract specifics and raw log
@@ -2665,3 +3063,125 @@ func (_Trade *TradeFilterer) WatchRemoveArbitrator(opts *bind.WatchOpts, sink ch
 		}
 	}), nil
 }
+
+// TradeUnpauseIterator is returned from FilterUnpause and is used to iterate over the raw logs and unpacked data for Unpause events raised by the Trade contract.
+type TradeUnpauseIterator struct {
+	Event *TradeUnpause // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *TradeUnpauseIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(TradeUnpause)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(TradeUnpause)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *TradeUnpauseIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *TradeUnpauseIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// TradeUnpause represents a Unpause event raised by the Trade contract.
+type TradeUnpause struct {
+	Raw types.Log // Blockchain specific contextual infos
+}
+
+// FilterUnpause is a free log retrieval operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
+//
+// Solidity: e Unpause()
+func (_Trade *TradeFilterer) FilterUnpause(opts *bind.FilterOpts) (*TradeUnpauseIterator, error) {
+
+	logs, sub, err := _Trade.contract.FilterLogs(opts, "Unpause")
+	if err != nil {
+		return nil, err
+	}
+	return &TradeUnpauseIterator{contract: _Trade.contract, event: "Unpause", logs: logs, sub: sub}, nil
+}
+
+// WatchUnpause is a free log subscription operation binding the contract event 0x7805862f689e2f13df9f062ff482ad3ad112aca9e0847911ed832e158c525b33.
+//
+// Solidity: e Unpause()
+func (_Trade *TradeFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *TradeUnpause) (event.Subscription, error) {
+
+	logs, sub, err := _Trade.contract.WatchLogs(opts, "Unpause")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(TradeUnpause)
+				if err := _Trade.contract.UnpackLog(event, "Unpause", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+

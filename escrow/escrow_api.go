@@ -3,9 +3,7 @@ package escrow
 import (
 	"fmt"
 	"github.com/themis-network/go-themis/rpc"
-	"log"
 	"encoding/json"
-	"math/big"
 )
 
 var(
@@ -27,7 +25,7 @@ type jsonError struct {
 
 func (t *EscrowNode) startApiServer(){
 
-	log.Println("Start Escrow api service...")
+	logger.Println("Start Escrow api service...")
 
 	apis := []rpc.API{
 		{
@@ -54,39 +52,39 @@ func NewEscrowAPI(t *EscrowNode) *EscrowAPI {
 2. try get decrypt fragment from map. if fail, get the fragment from contract, then decrypt it
  */
 func (t *EscrowAPI) GetDecryptSecret(orderId int64) (string, error){
-	log.Println("Request escrow_getDecryptSecret, orderId:", orderId)
+	logger.Println("Request escrow_getDecryptSecret, orderId:", orderId)
 
 	if v, ok := t.escrowNode.secrets[orderId]; ok {
 		return v, nil
 	}
 
-	var winner *big.Int
+	var winner uint32
 	if v, ok := t.escrowNode.orderWinner[orderId]; ok {
 		winner = v
 	}else {
 		w, err := t.escrowNode.getWinner(orderId)
 		if err != nil {
-			winner = nil
-			log.Println("get winner error")
+			winner = 0
+			logger.Println("get winner error")
 		}else {
 			winner = w
 		}
 	}
 
-	if winner == nil || winner.Int64() == 0{
+	if winner == 0{
 		//no winner error
-		log.Println("no winner error, orderid: ", orderId)
+		logger.Println("no winner error, orderid: ", orderId)
 		return "", &noWinnerError{"no winner error"}
 	}
 
-	log.Println("winner is: ", winner.Int64())
+	logger.Println("winner is: ", winner)
 
 	sectet, err := t.escrowNode.getFragment(orderId, winner)
-	log.Println("secret from contract: ", sectet)
+	logger.Println("secret from contract: ", sectet)
 	decSectet, err:= t.escrowNode.decrypt(sectet)
 
 	if err != nil {
-		log.Println("decrypt secret error, ", err)
+		logger.Println("decrypt secret error, ", err)
 		return "", &decryptError{fmt.Sprintf("decrypt secret error, %v", err)}
 	}
 	return decSectet, nil
