@@ -256,6 +256,23 @@ func CopyHeader(h *Header) *Header {
 	if cpy.Number = new(big.Int); h.Number != nil {
 		cpy.Number.Set(h.Number)
 	}
+	if cpy.DposIBM = new(big.Int); h.DposIBM != nil {
+		cpy.DposIBM.Set(h.DposIBM)
+	}
+	if cpy.ProposedIBM = new(big.Int); h.ProposedIBM != nil {
+		cpy.ProposedIBM.Set(h.ProposedIBM)
+	}
+	if cpy.ProposePendingProducersBlock = new(big.Int); h.ProposePendingProducersBlock != nil {
+		cpy.ProposePendingProducersBlock.Set(h.ProposePendingProducersBlock)
+	}
+	if len(cpy.ActiveProducers) > 0 {
+		cpy.ActiveProducers = make([]common.Address, len(h.ActiveProducers))
+		copy(cpy.ActiveProducers, h.ActiveProducers)
+	}
+	if len(cpy.PendingProducers) > 0 {
+		cpy.PendingProducers = make([]common.Address, len(h.PendingProducers))
+		copy(cpy.PendingProducers, h.PendingProducers)
+	}
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)

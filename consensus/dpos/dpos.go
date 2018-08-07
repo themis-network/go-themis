@@ -1,10 +1,12 @@
 package dpos
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"sync"
-	
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/common"
@@ -13,9 +15,14 @@ import (
 	"github.com/themis-network/go-themis/core/types"
 	"github.com/themis-network/go-themis/crypto"
 	"github.com/themis-network/go-themis/crypto/sha3"
+	"github.com/themis-network/go-themis/log"
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
+)
+
+const (
+	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
 )
 
 // Dpos delegated-proof-of-stake protocol constants.
@@ -38,9 +45,22 @@ var (
 // codebase, inherently breaking if the engine is swapped out. Please put common
 // error types into the consensus package.
 var (
+	// errUnknownBlock is returned when the list of signers is requested for a block
+	// that is not part of the local blockchain.
+	errUnknownBlock = errors.New("unknown block")
+
 	// errMissingSignature is returned if a block's extra-data section doesn't seem
 	// to contain a 65 byte secp256k1 signature.
 	errMissingSignature = errors.New("extra-data 65 byte suffix signature missing")
+
+	// errUnauthorized is returned if a header is signed by a non-authorized entity.
+	errUnauthorized = errors.New("unauthorized")
+
+	// errInvalidSigner is returned if coinbase is not same with signer
+	errInvalidCoinbase = errors.New("coinbase not same with signer")
+
+	// errInvalidSignerAtTimestamp is returned if signer of a block
+	errInvalidSignerAtTimestamp = errors.New("invalid singer at timestamp")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -114,12 +134,16 @@ type CallContractFunc func(SystemCall) ([]byte, error)
 
 // Dpos is the delegated-proof-of-stake consensus engine.
 type Dpos struct {
-	config          *params.DposConfig     // Consensus engine configuration parameters
-	signer          common.Address         // Themis address of the signing key
-	signFn          SignerFn               // Signer function to authorize hashes with
-	lock            sync.RWMutex           // Protects the signer fields
-	Call            CallContractFunc       // CallContractFunc is a message call func
-	systemContract    *SystemContractCaller          // System contract caller for dpos to get producers' info
+	config *params.DposConfig // Consensus engine configuration parameters
+
+	signer common.Address // Themis address of the signing key
+	signFn SignerFn       // Signer function to authorize hashes with
+
+	lock       sync.RWMutex  // Protects the signer fields
+	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
+
+	Call           CallContractFunc      // CallContractFunc is a message call func
+	systemContract *SystemContractCaller // System contract caller for dpos to get producers' info
 }
 
 // New creates a Dpos delegated-proof-of-stake consensus engine with the initial
@@ -127,16 +151,18 @@ type Dpos struct {
 func New(config *params.DposConfig) *Dpos {
 	// Copy config
 	conf := *config
+	signatures, _ := lru.NewARC(inmemorySignatures)
 
 	return &Dpos{
-		config:          &conf,
+		config:         &conf,
 		systemContract: NewSystemContractCaller(mainSystemContractABI, regSystemContractABI),
+		signatures:     signatures,
 	}
 }
 
 //Author return the coinbase of the header.
 func (d *Dpos) Author(header *types.Header) (common.Address, error) {
-	return header.Coinbase, nil
+	return ecrecover(header, d.signatures)
 }
 
 // Authorize injects a private key into the consensus engine to mint new blocks
@@ -269,16 +295,85 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	return nil
 }
 
+// VerifyUncles implements consensus.Engine, always returning an error for any
+// uncles as this consensus mechanism doesn't permit uncles.
 func (d *Dpos) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
+	if len(block.Uncles()) > 0 {
+		return errors.New("uncles not allowed")
+	}
 	return nil
 }
 
 func (d *Dpos) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
+	// Verifying the genesis block is not supported
+	number := header.Number.Uint64()
+	if number == 0 {
+		return errUnknownBlock
+	}
+
+	// Resolve the authorization key and check against signers
+	signer, err := ecrecover(header, d.signatures)
+	if err != nil {
+		return err
+	}
+	if header.Coinbase != signer {
+		return errInvalidCoinbase
+	}
+
+	// Ensure signer signs at his time
+	// Also check authority of signer
+	parent := chain.CurrentHeader()
+	var grandParent *types.Header
+	if parent.Number.Uint64() != 0 {
+		grandParent = chain.GetHeaderByNumber(parent.Number.Uint64() - 1)
+	}
+	if err := verifyBlockTime(grandParent, parent, header.Coinbase); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
-	return nil, nil
+	header := block.Header()
+
+	// Sealing the genesis block is not supported
+	number := header.Number.Uint64()
+	if number == 0 {
+		return nil, errUnknownBlock
+	}
+
+	// Don't hold the signer fields for the entire sealing procedure
+	d.lock.RLock()
+	signer, signFn := d.signer, d.signFn
+	d.lock.RUnlock()
+
+	if !bytes.Equal(signer[:], header.Coinbase[:]) {
+		return nil, errInvalidCoinbase
+	}
+
+	if _, err := getSignerIndex(chain.CurrentHeader(), header.Coinbase); err != nil {
+		return nil, err
+	}
+
+	// Sweet, the protocol permits us to sign the block, wait for our time
+	delay := time.Unix(header.Time.Int64(), 0).Sub(time.Now()) // nolint: gosimple
+	log.Trace("Waiting for slot to sign and propagate", "delay", common.PrettyDuration(delay))
+
+	select {
+	case <-stop:
+		return nil, nil
+	case <-time.After(delay):
+	}
+
+	// Sign all the things!
+	sighash, err := signFn(accounts.Account{Address: signer}, sigHash(header).Bytes())
+	if err != nil {
+		return nil, err
+	}
+	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
+
+	return block.WithSeal(header), nil
 }
 
 // Prepare implements consensus.Engine, preparing all the consensus fields of the
@@ -286,16 +381,9 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	// Set default field
 	// Try to propose a new pending producers scheme when epoch start
-	inturn := false
 	lastHeader := chain.CurrentHeader()
-	for _, active := range lastHeader.ActiveProducers {
-		if active == header.Coinbase {
-			inturn = true
-			break
-		}
-	}
-	if !inturn {
-		return nil
+	if _, err := getSignerIndex(lastHeader, header.Coinbase); err != nil {
+		return err
 	}
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
@@ -336,6 +424,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
+// Finalize implements consensus.Engine, ensuring no uncles are set and returns
+// the final block.
 func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	accumulateRewards(state, header)
@@ -345,7 +435,7 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 	return types.NewBlock(header, txs, nil, receipts), nil
 }
 
-// AccumulateRewards credits the coinbase of the given block with the mining
+// AccumulateRewards credits the coinbase of the given block with the producing
 // reward. The total reward consists of the static block reward.
 func accumulateRewards(state *state.StateDB, header *types.Header) {
 	state.AddBalance(header.Coinbase, blockReward)
@@ -367,4 +457,63 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 		Service:   &API{chain: chain, dpos: d},
 		Public:    true,
 	}}
+}
+
+// calcualteNextBlockTime returns next block time
+func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, error) {
+	// Assume grandParent and parent have been verified.
+	currentSignerIndex, err := getSignerIndex(parent, signer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start a new active producers or first sealed block
+	if parent.Number.Uint64() == 0 || grandParent.ActiveVersion != parent.ActiveVersion {
+		// This block is the first block applying new active producers and will start a new epoch
+		// NextBlockTime = parent.time + blockPeriod * (index + 1)
+		waitBlock := currentSignerIndex + 1
+		waitBlockTime := uint64(waitBlock) * blockPeriod
+
+		return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), nil
+	}
+
+	// Calculate block time based on same producer version
+	parentSignerIndex, err := getSignerIndex(grandParent, parent.Coinbase)
+	if err != nil {
+		return nil, err
+	}
+
+	waitBlock := currentSignerIndex - parentSignerIndex
+	// At the next block epoch
+	if waitBlock <= 0 {
+		waitBlock += int64(len(parent.ActiveProducers))
+	}
+
+	waitBlockTime := uint64(waitBlock) * blockPeriod
+
+	return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), nil
+}
+
+// verifyBlockTime
+func verifyBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) error {
+	return nil
+}
+
+// getSignerIndex returns index of signer in header.activeProducers, otherwise an error
+// will return
+func getSignerIndex(header *types.Header, signer common.Address) (int64, error) {
+	var signerIndex int64
+	inturn := false
+	for i, active := range header.ActiveProducers {
+		if active == signer {
+			inturn = true
+			signerIndex = int64(i)
+			break
+		}
+	}
+	if !inturn {
+		return 0, errUnauthorized
+	}
+
+	return signerIndex, nil
 }
