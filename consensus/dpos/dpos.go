@@ -570,7 +570,7 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 }
 
 // calcualteNextBlockTime returns next block time
-func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, error) {
+func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, *big.Int, error) {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, signer)
 	if err != nil {
