@@ -183,6 +183,90 @@ func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 }
 
 func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+	//TODO verify header is produced by inturn node
+	var lastheader *types.Header
+	if parents != nil {
+		lastheader = parents[len(parents)-1]
+	} else {
+		lastheader = chain.CurrentHeader()
+	}
+
+	//verify the ActiveProducers
+	if header.ActiveVersion == lastheader.ActiveVersion {
+		if len(header.ActiveProducers) != len(lastheader.ActiveProducers) {
+			return errors.New("wrong ActiveProducers List")
+		}
+		for i := 0; i != len(header.ActiveProducers); i++ {
+			if header.ActiveProducers[i] != lastheader.ActiveProducers[i] {
+				return errors.New("wrong ActiveProducers List")
+			}
+		}
+	} else if header.ActiveVersion == lastheader.ActiveVersion+1 {
+		temp := chain.GetHeaderByNumber(lastheader.ProposePendingProducersBlock.Uint64())
+		if temp == nil {
+			for _, h := range parents {
+				if lastheader.ProposePendingProducersBlock.Uint64() == h.Number.Uint64() {
+					temp = h
+				}
+			}
+		}
+		if temp == nil {
+			return errors.New("cannot find the ProposePendingProducersBlock")
+		}
+		if len(header.ActiveProducers) != len(temp.PendingProducers) {
+			return errors.New("wrong ActiveProducers List")
+		}
+		for i := 0; i != len(header.ActiveProducers); i++ {
+			if header.ActiveProducers[i] != temp.PendingProducers[i] {
+				return errors.New("wrong ActiveProducers List")
+			}
+		}
+	} else {
+		return errors.New("wrong ActiveProducers List")
+	}
+
+	//verify DposIBM
+	if header.DposIBM == lastheader.DposIBM {
+
+	} else if header.DposIBM == lastheader.ProposedIBM {
+
+	} else {
+		return errors.New("wrong DposIBM")
+	}
+
+	//verify ProposedIBM
+	proposed := false
+	proposedList := set{0, make([]list, 21)}
+	i := header.Number.Uint64()
+	for ; i != header.ProposedIBM.Uint64(); i-- {
+
+		iheader := chain.GetHeaderByNumber(i)
+		if iheader == nil {
+			for _, h := range parents {
+				if i == h.Number.Uint64() {
+					iheader = h
+				}
+			}
+		}
+		if iheader == nil {
+			continue
+		}
+
+		if proposedList.find(iheader.Coinbase[:]) {
+			continue
+		} else {
+			proposedList.insert(iheader.Coinbase[:])
+		}
+		if proposedList.size > (len(iheader.ActiveProducers)*2/3 + 1) {
+			proposed = true
+			break
+		}
+	}
+	if proposed {
+
+	} else {
+		return errors.New("wrong ProposedIBM")
+	}
 	return nil
 }
 
