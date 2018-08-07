@@ -4,7 +4,8 @@ import (
 	"errors"
 	"math/big"
 	"sync"
-
+	
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus"
@@ -118,8 +119,7 @@ type Dpos struct {
 	signFn          SignerFn               // Signer function to authorize hashes with
 	lock            sync.RWMutex           // Protects the signer fields
 	Call            CallContractFunc       // CallContractFunc is a message call func
-	mainContract    *MainContract          // Main system contract for dpos
-	currentContract *CurrentSystemContract // Current system contract for dpos
+	systemContract    *SystemContractCaller          // System contract caller for dpos to get producers' info
 }
 
 // New creates a Dpos delegated-proof-of-stake consensus engine with the initial
@@ -130,8 +130,7 @@ func New(config *params.DposConfig) *Dpos {
 
 	return &Dpos{
 		config:          &conf,
-		mainContract:    NewMainContract(),
-		currentContract: NewCurrentSystemContract(),
+		systemContract: NewSystemContractCaller(mainSystemContractABI, regSystemContractABI),
 	}
 }
 
