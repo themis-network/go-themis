@@ -209,12 +209,24 @@ func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 }
 
 func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
-	//TODO verify header is produced by inturn node
 	var lastheader *types.Header
 	if parents != nil {
 		lastheader = parents[len(parents)-1]
 	} else {
 		lastheader = chain.CurrentHeader()
+	}
+
+	//check it is from inturn node
+	grand := chain.GetHeaderByNumber(lastHeader.Number.Uint64() - 1)
+	if grand == nil {
+		grand = parents[len(parents)-2]
+	}
+	t, err := calcualteNextBlockTime(grand, lastHeader, header.Coinbase)
+	if err != nil {
+		return err
+	}
+	if header.Time.Uint64() > t {
+		return errors.New("wrong block time")
 	}
 
 	//verify the ActiveProducers
@@ -385,6 +397,14 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	lastHeader := chain.CurrentHeader()
 	if _, err := getSignerIndex(lastHeader, header.Coinbase); err != nil {
 		return err
+	}
+	t, err := calcualteNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	if err != nil {
+		return err
+	}
+
+	if time.Now().Unix() > t {
+		return errors.New("not my turn")
 	}
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
