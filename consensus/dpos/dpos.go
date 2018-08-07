@@ -4,7 +4,8 @@ import (
 	"errors"
 	"math/big"
 	"sync"
-
+	
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus"
@@ -118,8 +119,7 @@ type Dpos struct {
 	signFn          SignerFn               // Signer function to authorize hashes with
 	lock            sync.RWMutex           // Protects the signer fields
 	Call            CallContractFunc       // CallContractFunc is a message call func
-	mainContract    *MainContract          // Main system contract for dpos
-	currentContract *CurrentSystemContract // Current system contract for dpos
+	systemContract    *SystemContractCaller          // System contract caller for dpos to get producers' info
 }
 
 // New creates a Dpos delegated-proof-of-stake consensus engine with the initial
@@ -130,8 +130,7 @@ func New(config *params.DposConfig) *Dpos {
 
 	return &Dpos{
 		config:          &conf,
-		mainContract:    NewMainContract(),
-		currentContract: NewCurrentSystemContract(),
+		systemContract: NewSystemContractCaller(mainSystemContractABI, regSystemContractABI),
 	}
 }
 
@@ -288,8 +287,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Set default field
 	// Try to propose a new pending producers scheme when epoch start
 	inturn := false
-	lastheader := chain.CurrentHeader()
-	for _, active := range lastheader.ActiveProducers {
+	lastHeader := chain.CurrentHeader()
+	for _, active := range lastHeader.ActiveProducers {
 		if active == header.Coinbase {
 			inturn = true
 			break
@@ -300,12 +299,12 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
-	if lastheader.ProposePendingProducersBlock.Cmp(lastheader.DposIBM) <= 0 {
-		header.ActiveProducers = chain.GetHeaderByNumber(lastheader.ProposePendingProducersBlock.Uint64()).PendingProducers
-		header.ActiveVersion = lastheader.ActiveVersion + 1
+	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) <= 0 {
+		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
+		header.ActiveVersion = lastHeader.ActiveVersion + 1
 	} else {
-		header.ActiveProducers = lastheader.ActiveProducers
-		header.ActiveVersion = lastheader.ActiveVersion
+		header.ActiveProducers = lastHeader.ActiveProducers
+		header.ActiveVersion = lastHeader.ActiveVersion
 	}
 
 	proposed := false
