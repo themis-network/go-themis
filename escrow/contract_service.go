@@ -116,16 +116,61 @@ func (t *EscrowNode)processLog(eventLog types.Log){
 
 		t.secrets[orderId] = decrypt
 	}else if topic == uploadSecretTopic { //upload secret event
+
 		orderIdBytes := eventLog.Topics[1].Bytes()
 		orderId := big.NewInt(0)
 		orderId.SetBytes(orderIdBytes)
 
-		t.sendVerifyResults(orderId)
+		logger.Println("Process Log, event uploadSecretTopic, orderId:{}", orderId)
+
+		status, err := t.contractClient.traderCaller.GetOrderStatus(t.getCallOpts(), orderId)
+		logger.Println("order status", status)
+		if err != nil{
+			logger.Println("failed to get order status")
+			return
+		}
+
+		if status == SecretUploaded {
+			vb, vs, err := t.verify(orderId)
+			if err != nil {
+				logger.Println("verify error")
+			}
+			t.sendVerifyResults(orderId, vb, vs)
+		}
 	}else {
+		logger.Println("Process Log, event unknow")
 	}
 }
 
-func (t *EscrowNode)sendVerifyResults(orderId *big.Int){
+func (t *EscrowNode)verify(orderId *big.Int) (bool, bool, error){
+
+	from := t.escrowAddr
+
+	opts := &bind.CallOpts{
+		Pending: true,
+		From: from,
+		Context: t.contractClient.ctx,
+	}
+
+	buyer, err:= t.contractClient.traderCaller.GetOrderBuyer(opts, orderId)
+	seller, err:= t.contractClient.traderCaller.GetOrderBuyer(opts, orderId)
+
+	verfifyDataB, err := t.contractClient.traderCaller.GetVerifyData(opts, orderId, uint32(buyer.Uint64()))
+	verfifyDataS, err := t.contractClient.traderCaller.GetVerifyData(opts, orderId, uint32(seller.Uint64()))
+
+	fragmentBuyer, err := t.getFragment(orderId.Int64(), uint32(buyer.Uint64()))
+	fragmentSeller, err := t.getFragment(orderId.Int64(), uint32(seller.Uint64()))
+
+	vb, err:= verifyFragment(verfifyDataB, fragmentBuyer)
+	vs, err := verifyFragment(fragmentSeller, verfifyDataS)
+	if err != nil {
+		return false, false, err
+	}else{
+		return vb, vs, nil
+	}
+}
+
+func (t *EscrowNode)sendVerifyResults(orderId *big.Int, vb bool, vs bool){
 
 	nonce, _ := t.contractClient.rawClient.PendingNonceAt(context.Background(), t.escrowAddr)
 	gasPrice, _ := t.contractClient.rawClient.SuggestGasPrice(context.Background())
@@ -138,7 +183,7 @@ func (t *EscrowNode)sendVerifyResults(orderId *big.Int){
 	auth.GasLimit = uint64(500000) // in units
 	auth.GasPrice = gasPrice
 
-	tx, err:= t.contractClient.traderTransactor.SendVerifyResult(auth, orderId, true, true)
+	tx, err:= t.contractClient.traderTransactor.SendVerifyResult(auth, orderId, vb, vs)
 	if err!= nil {
 		logger.Println(err)
 	}
@@ -210,4 +255,14 @@ func getContractClient(nodeEndpoint string) (*ContractClient, error){
 		traderTransactor: tTran,
 	}
 	return contractClient, nil
+}
+
+func (t *EscrowNode) getCallOpts() * bind.CallOpts{
+	from := t.escrowAddr
+	opts := &bind.CallOpts{
+		Pending: false,
+		From: from,
+		Context: t.contractClient.ctx,
+	}
+	return opts
 }
