@@ -30,8 +30,8 @@ var (
 	extraVanity = 32 // Fixed number of extra-data prefix bytes reserved for signer vanity
 	extraSeal   = 65 // Fixed number of extra-data suffix bytes reserved for signer seal
 
-	epochLength = uint64(24 * 60 * 60) // Default seconds after which try to propose a new pending producers scheme
-	blockPeriod = uint64(15)           // Default minimum difference between two consecutive block's timestamps
+	epochLength = uint64(24 * 60 * 6) // Default blocks after which try to propose a new pending producers scheme
+	blockPeriod = uint64(10)           // Default minimum difference between two consecutive block's timestamps
 
 	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
 )
