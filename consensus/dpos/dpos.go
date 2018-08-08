@@ -31,7 +31,7 @@ var (
 	extraSeal   = 65 // Fixed number of extra-data suffix bytes reserved for signer seal
 
 	epochLength = uint64(24 * 60 * 6) // Default blocks after which try to propose a new pending producers scheme
-	blockPeriod = uint64(10)           // Default minimum difference between two consecutive block's timestamps
+	blockPeriod = uint64(10)          // Default minimum difference between two consecutive block's timestamps
 
 	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
 )
@@ -216,11 +216,11 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	}
 
 	//check it is from inturn node
-	grand := chain.GetHeaderByNumber(lastHeader.Number.Uint64() - 1)
+	grand := chain.GetHeaderByNumber(lastheader.Number.Uint64() - 1)
 	if grand == nil {
 		grand = parents[len(parents)-2]
 	}
-	t, err := calcualteNextBlockTime(grand, lastHeader, header.Coinbase)
+	t, err := calcualteNextBlockTime(grand, lastheader, header.Coinbase)
 	if err != nil {
 		return err
 	}
