@@ -443,12 +443,14 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		header.ProposedIBM.SetUint64(i)
 	}
 
-	if err := getPendingProducers(header, chain) {
-		return err
+	err1 := getPendingProducers(header, chain, d.systemContract, d.Call)
+	if  err1 != nil {
+		return err1
 	}
 	return nil
 }
 
+//for rand top producers
 type randomNum struct {
 	serial int
 	num uint64
@@ -468,52 +470,55 @@ func (s randomNumSlice) Swap(i,j int) {
 	s[i],s[j] = s[j],s[i]
 }
 
-func getPendingProducers(header *types.Header, chain consensus.ChainReader) error {
-	lastHeader = chain.CurrentHeader()
+func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *SystemContractCaller, Call CallContractFunc) error {
+	lastHeader := chain.CurrentHeader()
 	if header == nil {
 		return consensus.ErrUnknownAncestor
 	}
 
-	parentOfLastHeader = chain.GetHeaderByHash(lastHeader.ParentHash)
-	selfTime, selfNumber, err:= calcualteNextBlockTime(parentOfLastHeader, lastHeader, header.coinbase)
+	parentOfLastHeader := chain.GetHeaderByHash(lastHeader.ParentHash)
+	selfTime, err:= calcualteNextBlockTime(parentOfLastHeader, lastHeader, header.Coinbase)
 	if err != nil {
 		return err
 	}
-	header.Time, header.Number = selfTime, selfNumber
+	header.Time = selfTime
 	//if the first block of epoch, or pending version not update on the first block of current epoch
-	if ((header.Number.Mod(new(big.Int).SetUint64(epochLength)).Cmp(new(big.Int).SetUint64(1)) == 1) || 
-	(new(big.Int).SetUint64(uint64(time.Now().Unix())).Cmp(header.Time.Sub(header.Time, new(big.Int).SetUint64(blockPeriod)))) && 
-	lastHeader.Time.Mod(new(big.Int).SetUint64(epochLength)).Cmp(header.Time.Mod(new(big.Int).SetUint64(epochLength))) == -1  ){
-		//TODO: get top producers
-		//compare top producers and pending producers, not used now.
-		/*change := false
-		if len(topProducers) != len(lastHeader.pendingProducers) {
-			change = true
-		} else {
-			count := 0
-			for producerP := range lastHeader.pendingProducers {
-				for producerT := range topProducers {
-					if produceP.Hex() == producerT.Hex() {
-						count += 1
-						break
-					}
-				}
-			}
-			if count == len(topProducers) {
-				change = true
-			}
+	if ( (header.Number.Uint64()%epochLength) == 0 ){
+		//get top producers info by system contract
+		data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
+		if err != nil {
+			copy(header.PendingProducers, lastHeader.PendingProducers)
+			return nil
 		}
-		if !change {
-			header.PendingProducers = lastHeader.pendingProducers
-			header.PendingVersion += 1
-		}*/
-	
+		contractAddr := systemContract.GetRegSystemContractAddress(data)
+		data1, err1 := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
+		if err1 != nil {
+			copy(header.PendingProducers, lastHeader.PendingProducers)
+			return nil
+		}
+		producersAddr, weightsBig, amount, err := systemContract.GetAllProducersInfo(data1)
+		var sortWeights randomNumSlice
+		for k, v := range weightsBig {
+			var tmp = &randomNum {
+				serial: k,
+				num: (*v).Uint64(),
+			}			
+			sortWeights = append(sortWeights, tmp)
+		}
+		sort.Sort(sortWeights)
+		var topProducers []common.Address
+		var i int64
+		for  i = 0; i < amount.Int64(); i++ {
+			topProducers = append(topProducers, producersAddr[sortWeights[i].serial])
+		}
+
+		//rand top producers
 		seed := lastHeader.Time.Uint64()
 		rand := NewRandom(seed)
 		var randomNums randomNumSlice
-		for i := 0; i < len(lastHeader.PendingProducers); i++ { //TODO:Length should be obtained from the contract
+		for i = 0; i < amount.Int64(); i++ {
 			var tmp = &randomNum {
-				serial: i,
+				serial: int(i),
 				num: rand.GenRandom(),
 			}
 			randomNums = append(randomNums, tmp)
@@ -522,14 +527,14 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader) erro
 		sort.Sort(randomNums)
 
 		var newProducers []common.Address
-		for i := 0; i < len(lastHeader.pendingProducers); i++ { //TODO:Length should be obtained from the contract
+		for i = 0; i < amount.Int64(); i++ {
 			newProducers = append(newProducers, topProducers[randomNums[i].serial])
 		}
 
-		copy(header.pendingProducers, newProducers)
+		copy(header.PendingProducers, newProducers)
 		header.PendingVersion++
 	} else {
-		copy(header.pendingProducers, lastHeader.pendingProducers)
+		copy(header.PendingProducers, lastHeader.PendingProducers)
 	}
 	return nil
 }
@@ -570,7 +575,7 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 }
 
 // calcualteNextBlockTime returns next block time
-func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, *big.Int, error) {
+func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, error) {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, signer)
 	if err != nil {
@@ -601,7 +606,7 @@ func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 
 	waitBlockTime := uint64(waitBlock) * blockPeriod
 
-	return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), new(big.Int).SetUint64(waitBlockTime/blockPeriod), nil
+	return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), nil
 }
 
 // verifyBlockTime
