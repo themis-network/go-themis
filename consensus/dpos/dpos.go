@@ -344,7 +344,7 @@ func (d *Dpos) VerifySeal(chain consensus.ChainReader, header *types.Header) err
 	// If parent's number is 0(genesis block), grandParent will get nil, so it's ok.
 	parent := chain.CurrentHeader()
 	grandParent := chain.GetHeaderByNumber(parent.Number.Uint64() - 1)
-	if err := verifyBlockTime(grandParent, parent, header.Coinbase); err != nil {
+	if err := verifyBlockTime(grandParent, parent, header); err != nil {
 		return err
 	}
 
@@ -607,7 +607,15 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 }
 
 // verifyBlockTime
-func verifyBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) error {
+func verifyBlockTime(grandParent *types.Header, parent *types.Header, header *types.Header) error {
+	rightTime, err := calculateNextBlockTime(grandParent, parent, header.Coinbase)
+	if err != nil {
+		return err
+	}
+	if rightTime != header.Time.Uint64() {
+		return errInvalidBlockTime
+	}
+	
 	return nil
 }
 
