@@ -458,9 +458,10 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader, syst
 	
 	//the Newest block header of last epoch
 	lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
+	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
 
 	//if the first block of epoch, or pending version not update on the first block of current epoch
-	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochNumNewest) < 1 {
+	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
 		//get top producers info by system contract
 		data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
 		if err != nil {
