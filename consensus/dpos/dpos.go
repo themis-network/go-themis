@@ -62,6 +62,13 @@ var (
 
 	// errInvalidSignerAtTimestamp is returned if signer of a block
 	errInvalidSignerAtTimestamp = errors.New("invalid singer at timestamp")
+	
+	// errInvalidGrandParent is returned if grandParent is nil while parent is not genesis block
+	// when calculating block time
+	errInvalidGrandParent = errors.New("invalid grand parent for calculating block time")
+	
+	// errInvalidBlockTime is returned if timestamp of block is not fit consensus rule
+	errInvalidBlockTime = errors.New("invalid block time")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -221,7 +228,7 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	if grand == nil {
 		grand = parents[len(parents)-2]
 	}
-	t, err := calcualteNextBlockTime(grand, lastheader, header.Coinbase)
+	t, err := calculateNextBlockTime(grand, lastheader, header.Coinbase)
 	if err != nil {
 		return err
 	}
@@ -333,13 +340,10 @@ func (d *Dpos) VerifySeal(chain consensus.ChainReader, header *types.Header) err
 		return errInvalidCoinbase
 	}
 
-	// Ensure signer signs at his time
-	// Also check authority of signer
+	// Ensure signer signs at his time; Also check authority of signer
+	// If parent's number is 0(genesis block), grandParent will get nil, so it's ok.
 	parent := chain.CurrentHeader()
-	var grandParent *types.Header
-	if parent.Number.Uint64() != 0 {
-		grandParent = chain.GetHeaderByNumber(parent.Number.Uint64() - 1)
-	}
+	grandParent := chain.GetHeaderByNumber(parent.Number.Uint64() - 1)
 	if err := verifyBlockTime(grandParent, parent, header.Coinbase); err != nil {
 		return err
 	}
@@ -395,17 +399,13 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Set default field
 	// Try to propose a new pending producers scheme when epoch start
 	lastHeader := chain.CurrentHeader()
-	if _, err := getSignerIndex(lastHeader, header.Coinbase); err != nil {
-		return err
-	}
-	t, err := calcualteNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	// Calculate next block time, will return err is header.coinBase is unauthorized.
+	myBlockTime, err := calculateNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
 	if err != nil {
 		return err
 	}
-
-	if time.Now().Unix() > t {
-		return errors.New("not my turn")
-	}
+    // Set block time
+	header.Time.SetUint64(myBlockTime)
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
 	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) <= 0 {
@@ -475,15 +475,9 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader, syst
 	if header == nil {
 		return consensus.ErrUnknownAncestor
 	}
-
-	parentOfLastHeader := chain.GetHeaderByHash(lastHeader.ParentHash)
-	selfTime, err:= calcualteNextBlockTime(parentOfLastHeader, lastHeader, header.Coinbase)
-	if err != nil {
-		return err
-	}
-	header.Time = selfTime
+	
 	//if the first block of epoch, or pending version not update on the first block of current epoch
-	if ( (header.Number.Uint64()%epochLength) == 0 ){
+	if header.Number.Uint64() % epochLength == 0 {
 		//get top producers info by system contract
 		data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
 		if err != nil {
@@ -575,11 +569,14 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 }
 
 // calcualteNextBlockTime returns next block time
-func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (*big.Int, error) {
+func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, signer)
 	if err != nil {
-		return nil, err
+		return 0, err
+	}
+	if grandParent == nil && parent.Number.Uint64() > 0 {
+		return 0, errInvalidGrandParent
 	}
 
 	// Start a new active producers or first sealed block
@@ -589,13 +586,13 @@ func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 		waitBlock := currentSignerIndex + 1
 		waitBlockTime := uint64(waitBlock) * blockPeriod
 
-		return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), nil
+		return parent.Time.Uint64() + waitBlockTime, nil
 	}
 
 	// Calculate block time based on same producer version
 	parentSignerIndex, err := getSignerIndex(grandParent, parent.Coinbase)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	waitBlock := currentSignerIndex - parentSignerIndex
@@ -606,7 +603,7 @@ func calcualteNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 
 	waitBlockTime := uint64(waitBlock) * blockPeriod
 
-	return parent.Time.Add(parent.Time, new(big.Int).SetUint64(waitBlockTime)), nil
+	return parent.Time.Uint64() + waitBlockTime, nil
 }
 
 // verifyBlockTime
