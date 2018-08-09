@@ -2,6 +2,26 @@
 
 package dpos
 
+//for rand top producers
+type sortNum struct {
+	serial int
+	num uint64
+}
+
+type sortNumSlice []*sortNum
+
+func (s sortNumSlice) Len() int {
+	return len(s)
+}
+
+func (s sortNumSlice) Less(i,j int) bool {
+	return s[i].num > s[j].num
+}
+
+func (s sortNumSlice) Swap(i,j int) {
+	s[i],s[j] = s[j],s[i]
+}
+
 type Random struct {
 	s [4] uint64
 }

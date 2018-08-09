@@ -450,26 +450,6 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-//for rand top producers
-type randomNum struct {
-	serial int
-	num uint64
-}
-
-type randomNumSlice []*randomNum
-
-func (s randomNumSlice) Len() int {
-	return len(s)
-}
-
-func (s randomNumSlice) Less(i,j int) bool {
-	return s[i].num > s[j].num
-}
-
-func (s randomNumSlice) Swap(i,j int) {
-	s[i],s[j] = s[j],s[i]
-}
-
 func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *SystemContractCaller, Call CallContractFunc) error {
 	lastHeader := chain.CurrentHeader()
 	if header == nil {
@@ -482,18 +462,28 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader, syst
 		data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
 		if err != nil {
 			copy(header.PendingProducers, lastHeader.PendingProducers)
+			header.PendingVersion = lastHeader.PendingVersion
+			header.ProposePendingProducersBlock = header.Number
 			return nil
 		}
 		contractAddr := systemContract.GetRegSystemContractAddress(data)
 		data1, err1 := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
 		if err1 != nil {
 			copy(header.PendingProducers, lastHeader.PendingProducers)
+			header.PendingVersion = lastHeader.PendingVersion
+			header.ProposePendingProducersBlock = header.Number
 			return nil
 		}
-		producersAddr, weightsBig, amount, err := systemContract.GetAllProducersInfo(data1)
-		var sortWeights randomNumSlice
+		producersAddr, weightsBig, amount, err2 := systemContract.GetAllProducersInfo(data1)
+		if err2 != nil {
+			copy(header.PendingProducers, lastHeader.PendingProducers)
+			header.PendingVersion = lastHeader.PendingVersion
+			header.ProposePendingProducersBlock = header.Number
+			return nil
+		}
+		var sortWeights sortNumSlice
 		for k, v := range weightsBig {
-			var tmp = &randomNum {
+			var tmp = &sortNum {
 				serial: k,
 				num: (*v).Uint64(),
 			}			
@@ -509,9 +499,9 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader, syst
 		//rand top producers
 		seed := lastHeader.Time.Uint64()
 		rand := NewRandom(seed)
-		var randomNums randomNumSlice
+		var randomNums sortNumSlice
 		for i = 0; i < amount.Int64(); i++ {
-			var tmp = &randomNum {
+			var tmp = &sortNum {
 				serial: int(i),
 				num: rand.GenRandom(),
 			}
@@ -527,8 +517,11 @@ func getPendingProducers(header *types.Header, chain consensus.ChainReader, syst
 
 		copy(header.PendingProducers, newProducers)
 		header.PendingVersion++
+		header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
 	} else {
 		copy(header.PendingProducers, lastHeader.PendingProducers)
+		header.PendingVersion = lastHeader.PendingVersion
+		header.ProposePendingProducersBlock = header.Number
 	}
 	return nil
 }
