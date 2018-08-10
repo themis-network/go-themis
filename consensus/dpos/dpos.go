@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
-	"sort"
 	"sync"
 	"time"
 
@@ -557,7 +556,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 			header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
 		}
 	}
-	
+
 	return nil
 }
 
