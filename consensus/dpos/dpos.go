@@ -21,6 +21,7 @@ import (
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
 	"github.com/themis-network/go-themis/core"
+	"github.com/themis-network/go-themis/common/hexutil"
 )
 
 const (
@@ -36,6 +37,8 @@ var (
 	blockPeriod = uint64(10)          // Default minimum difference between two consecutive block's timestamps
 
 	uncleHash = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
+	difficulty = big.NewInt(1) // Block difficulty for dpos
+	nonce = hexutil.MustDecode("0x0000000000000000") // Nonce number for dpos.
 )
 
 var (
@@ -50,6 +53,10 @@ var (
 	// errUnknownBlock is returned when the list of signers is requested for a block
 	// that is not part of the local blockchain.
 	errUnknownBlock = errors.New("unknown block")
+	
+	// errMissingVanity is returned if a block's extra-data section is shorter than
+	// 32 bytes, which is required to store the signer vanity.
+	errMissingVanity = errors.New("extra-data 32 byte vanity prefix missing")
 
 	// errMissingSignature is returned if a block's extra-data section doesn't seem
 	// to contain a 65 byte secp256k1 signature.
@@ -70,6 +77,23 @@ var (
 	
 	// errInvalidBlockTime is returned if timestamp of block is not fit consensus rule
 	errInvalidBlockTime = errors.New("invalid block time")
+	
+	// errInvalidActiveProducerList is returned if active producer list is not the same
+	// but active producer version is same
+	errInvalidActiveProducerList = errors.New("invalid active producer list")
+	
+	// errInvalidPendingProducerList is returned if pending producer list is not the same
+	// but pending producer version is same
+	errInvalidPendingProducerList = errors.New("invalid pending producer list")
+	
+	// errInvalidMixDigest is returned if a block's mix digest is non-zero.
+	errInvalidMixDigest = errors.New("non-zero mix digest")
+	
+	// errInvalidUncleHash is returned if a block contains an non-empty uncle list.
+	errInvalidUncleHash = errors.New("non empty uncle hash")
+	
+	// errInvalidNonce if a block's nonce is non-zero
+	errInvalidNonce = errors.New("non-zero nonce")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -217,41 +241,70 @@ func (d *Dpos) VerifyHeaders(chain consensus.ChainReader, headers []*types.Heade
 }
 
 func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
-	var lastheader *types.Header
-	if parents != nil {
-		lastheader = parents[len(parents)-1]
+	if header.Number == nil {
+		return errUnknownBlock
+	}
+	
+	// Ensure that the mix digest is zero as we don't have fork protection currently
+	if header.MixDigest != (common.Hash{}) {
+		return errInvalidMixDigest
+	}
+	// Ensure that the block doesn't contain any uncles which are meaningless in dpos
+	if header.UncleHash != uncleHash {
+		return errInvalidUncleHash
+	}
+	
+	// Don't waste time checking blocks from the future
+	if header.Time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
+		return consensus.ErrFutureBlock
+	}
+	
+	// Nonce must be 0x00..0
+	if !bytes.Equal(header.Nonce[:], nonce) {
+		return errInvalidNonce
+	}
+	
+	// Check that the extra-data contains both the vanity and signature
+	if len(header.Extra) < extraVanity {
+		return errMissingVanity
+	}
+	if len(header.Extra) < extraVanity+extraSeal {
+		return errMissingSignature
+	}
+	
+	return d.verifyDposField(chain, header, parents)
+}
+
+func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+	// The genesis block is the always valid dead-end
+	number := header.Number.Uint64()
+	if number == 0 {
+		return nil
+	}
+	var parent *types.Header
+	if len(parents) > 0 {
+		parent = parents[len(parents)-1]
 	} else {
-		lastheader = chain.CurrentHeader()
+		parent = chain.GetHeader(header.ParentHash, number-1)
 	}
-
-	//check it is from inturn node
-	grand := chain.GetHeaderByNumber(lastheader.Number.Uint64() - 1)
-	if grand == nil {
-		grand = parents[len(parents)-2]
+	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
+		return consensus.ErrUnknownAncestor
 	}
-	t, err := calculateNextBlockTime(grand, lastheader, header.Coinbase)
-	if err != nil {
-		return err
-	}
-	if header.Time.Uint64() > t {
-		return errors.New("wrong block time")
-	}
-
-	//verify the ActiveProducers
-	if header.ActiveVersion == lastheader.ActiveVersion {
-		if len(header.ActiveProducers) != len(lastheader.ActiveProducers) {
-			return errors.New("wrong ActiveProducers List")
+	
+	// TODO add verify pending producer list
+	
+	// verify the ActiveProducers
+	if header.ActiveVersion == parent.ActiveVersion {
+		// Producer list must be same as long as version is the same
+		if !compareProducers(header.ActiveProducers, parent.ActiveProducers) {
+			return errInvalidActiveProducerList
 		}
-		for i := 0; i != len(header.ActiveProducers); i++ {
-			if header.ActiveProducers[i] != lastheader.ActiveProducers[i] {
-				return errors.New("wrong ActiveProducers List")
-			}
-		}
-	} else if header.ActiveVersion == lastheader.ActiveVersion+1 {
-		temp := chain.GetHeaderByNumber(lastheader.ProposePendingProducersBlock.Uint64())
+	} else if header.ActiveVersion == parent.ActiveVersion+1 {
+		temp := chain.GetHeaderByNumber(parent.ProposePendingProducersBlock.Uint64())
+		// TODO necessary
 		if temp == nil {
 			for _, h := range parents {
-				if lastheader.ProposePendingProducersBlock.Uint64() == h.Number.Uint64() {
+				if parent.ProposePendingProducersBlock.Uint64() == h.Number.Uint64() {
 					temp = h
 				}
 			}
@@ -259,6 +312,7 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 		if temp == nil {
 			return errors.New("cannot find the ProposePendingProducersBlock")
 		}
+		// TODO Check parent.dpos-parent.ProposePendingProducersBlock >=0
 		if len(header.ActiveProducers) != len(temp.PendingProducers) {
 			return errors.New("wrong ActiveProducers List")
 		}
@@ -270,23 +324,25 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	} else {
 		return errors.New("wrong ActiveProducers List")
 	}
-
-	//verify DposIBM
-	if header.DposIBM == lastheader.DposIBM {
-
-	} else if header.DposIBM == lastheader.ProposedIBM {
-
+	
+	// verify DposIBM
+	// TODO two different situation should be verified different
+	if header.DposIBM == parent.DposIBM {
+	
+	} else if header.DposIBM == parent.ProposedIBM {
+	
 	} else {
 		return errors.New("wrong DposIBM")
 	}
-
+	
 	//verify ProposedIBM
 	proposed := false
 	proposedList := set{0, make([]list, 21)}
 	i := header.Number.Uint64()
 	for ; i != header.ProposedIBM.Uint64(); i-- {
-
+		
 		iheader := chain.GetHeaderByNumber(i)
+		// TODO Not necessary
 		if iheader == nil {
 			for _, h := range parents {
 				if i == h.Number.Uint64() {
@@ -297,7 +353,8 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 		if iheader == nil {
 			continue
 		}
-
+		
+		// TODO try mapping and compare version
 		if proposedList.find(iheader.Coinbase[:]) {
 			continue
 		} else {
@@ -309,11 +366,11 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 		}
 	}
 	if proposed {
-
+	
 	} else {
 		return errors.New("wrong ProposedIBM")
 	}
-	return nil
+	return d.verifySeal(chain, header, parents)
 }
 
 // VerifyUncles implements consensus.Engine, always returning an error for any
@@ -326,12 +383,16 @@ func (d *Dpos) VerifyUncles(chain consensus.ChainReader, block *types.Block) err
 }
 
 func (d *Dpos) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
+    return d.verifySeal(chain, header, nil)
+}
+
+func (d *Dpos) verifySeal(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
 		return errUnknownBlock
 	}
-
+	
 	// Resolve the authorization key and check against signers
 	signer, err := ecrecover(header, d.signatures)
 	if err != nil {
@@ -340,15 +401,24 @@ func (d *Dpos) VerifySeal(chain consensus.ChainReader, header *types.Header) err
 	if header.Coinbase != signer {
 		return errInvalidCoinbase
 	}
-
-	// Ensure signer signs at his time; Also check authority of signer
+	
 	// If parent's number is 0(genesis block), grandParent will get nil, so it's ok.
-	parent := chain.CurrentHeader()
-	grandParent := chain.GetHeaderByNumber(parent.Number.Uint64() - 1)
-	if err := verifyBlockTime(grandParent, parent, header); err != nil {
+	var parent, grand *types.Header
+	if len(parents) > 0 {
+		parent = parents[len(parents)-1]
+	} else {
+		parent = chain.GetHeader(header.ParentHash, number-1)
+	}
+	if len(parents) > 1 {
+		grand = parents[len(parents)-2]
+	} else {
+		grand = chain.GetHeader(parent.ParentHash, parent.Number.Uint64()-1)
+	}
+	// Ensure signer signs at his time; Also check authority of signer
+	if err := verifyBlockTime(grand, parent, header); err != nil {
 		return err
 	}
-
+	
 	return nil
 }
 
@@ -400,6 +470,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Set default field
 	// Try to propose a new pending producers scheme when epoch start
 	lastHeader := chain.CurrentHeader()
+	// TODO move this to seal (will cause error at here)
 	// Calculate next block time, will return err is header.coinBase is unauthorized.
 	myBlockTime, err := calculateNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
 	if err != nil {
@@ -407,6 +478,21 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
     // Set block time
 	header.Time.SetUint64(myBlockTime)
+	
+	// Set the correct difficulty
+	header.Difficulty = difficulty
+	
+	// Ensure the extra data has all it's components
+	if len(header.Extra) < extraVanity {
+		header.Extra = append(header.Extra, bytes.Repeat([]byte{0x00}, extraVanity-len(header.Extra))...)
+	}
+	header.Extra = header.Extra[:extraVanity]
+	
+	// Mix digest is reserved for now, set to empty
+	header.MixDigest = common.Hash{}
+	
+	// Set nonce
+	copy(header.Nonce[:], nonce[:])
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
 	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) <= 0 {
@@ -451,6 +537,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
+// TODO split; this method should only return producers
 func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *core.SystemContractCaller, Call CallContractFunc) error {
 	lastHeader := chain.CurrentHeader()
 	if header == nil {
@@ -537,6 +624,7 @@ func (d *Dpos) Finalize(chain consensus.ChainReader, header *types.Header, state
 	// Accumulate any block and uncle rewards and commit the final state root
 	accumulateRewards(state, header)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	header.UncleHash = uncleHash
 
 	// Header seems complete, assemble into a block and return
 	return types.NewBlock(header, txs, nil, receipts), nil
@@ -552,7 +640,7 @@ func accumulateRewards(state *state.StateDB, header *types.Header) {
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
 func (d *Dpos) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
-	return big.NewInt(1)
+	return difficulty
 }
 
 // APIs implements consensus.Engine, returning the user facing RPC API to get system
@@ -634,4 +722,17 @@ func getSignerIndex(header *types.Header, signer common.Address) (int64, error) 
 	}
 
 	return signerIndex, nil
+}
+
+func compareProducers(src []common.Address, dst []common.Address) bool {
+	if len(src) != len(dst) {
+		return false
+	}
+	
+	for i, v := range src {
+		if v != dst[i] {
+			return false
+		}
+	}
+	return true
 }

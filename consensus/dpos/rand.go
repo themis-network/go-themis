@@ -22,6 +22,7 @@ func (s sortNumSlice) Swap(i,j int) {
 	s[i],s[j] = s[j],s[i]
 }
 
+// TODO refactor; add resetSeed
 type Random struct {
 	s [4] uint64
 }
@@ -55,3 +56,5 @@ func (r *Random) GenRandom() uint64     {
 
 	return result
 }
+
+// TODO add Shuffle
