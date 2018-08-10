@@ -35,7 +35,6 @@ import (
 	"github.com/themis-network/go-themis/log"
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
-	"github.com/themis-network/go-themis/consensus/dpos"
 )
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -234,8 +233,8 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 	
 	// Setup dpos consensus system contract
-	if g.Config.Dpos != nil {
-		for _, contract := range dpos.HardcodedContractsDpos {
+	if g.Config != nil && g.Config.Dpos != nil {
+		for _, contract := range HardcodedContractsDpos {
 			statedb.SetCode(contract.GetContractAddr(), hexutil.MustDecode(contract.GetCode()))
 			for key, value := range contract.GetStorage() {
 				statedb.SetState(contract.GetContractAddr(), key, value)
@@ -268,7 +267,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if g.Difficulty == nil {
 		head.Difficulty = params.GenesisDifficulty
 	}
-	if g.Config.Dpos.Producers != nil {
+	if g.Config != nil && g.Config.Dpos != nil && g.Config.Dpos.Producers != nil {
 		producers := make([]common.Address, len(g.Config.Dpos.Producers))
 		for _, producer := range g.Config.Dpos.Producers {
 			producers = append(producers, producer.Address)

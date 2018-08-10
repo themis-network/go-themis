@@ -444,7 +444,7 @@ func (s *Ethereum) Stop() error {
 
 
 // TODO update
-func (s *Ethereum) callContract(message dpos.SystemCall) ([]byte, error) {
+func (s *Ethereum) callContract(message core.SystemCall) ([]byte, error) {
 	ctx := context.Background()
 	header := s.blockchain.GetBlockByNumber(message.AtBlock)
 	statedb, err := s.blockchain.StateAt(header.Root())

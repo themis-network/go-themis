@@ -20,6 +20,7 @@ import (
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
+	"github.com/themis-network/go-themis/core"
 )
 
 const (
@@ -138,7 +139,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 	return signer, nil
 }
 
-type CallContractFunc func(SystemCall) ([]byte, error)
+type CallContractFunc func(core.SystemCall) ([]byte, error)
 
 // Dpos is the delegated-proof-of-stake consensus engine.
 type Dpos struct {
@@ -151,7 +152,7 @@ type Dpos struct {
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
 
 	Call           CallContractFunc      // CallContractFunc is a message call func
-	systemContract *SystemContractCaller // System contract caller for dpos to get producers' info
+	systemContract *core.SystemContractCaller // System contract caller for dpos to get producers' info
 }
 
 // New creates a Dpos delegated-proof-of-stake consensus engine with the initial
@@ -163,7 +164,7 @@ func New(config *params.DposConfig) *Dpos {
 
 	return &Dpos{
 		config:         &conf,
-		systemContract: NewSystemContractCaller(mainSystemContractABI, regSystemContractABI),
+		systemContract: core.NewSystemContractCaller(),
 		signatures:     signatures,
 	}
 }
@@ -450,7 +451,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *SystemContractCaller, Call CallContractFunc) error {
+func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *core.SystemContractCaller, Call CallContractFunc) error {
 	lastHeader := chain.CurrentHeader()
 	if header == nil {
 		return consensus.ErrUnknownAncestor
@@ -565,7 +566,7 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
-// calcualteNextBlockTime returns next block time
+// calculateNextBlockTime returns next block time
 func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, signer)

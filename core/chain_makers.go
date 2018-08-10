@@ -162,8 +162,9 @@ func (b *BlockGen) OffsetTime(seconds int64) {
 // and their coinbase will be the zero address.
 //
 // Blocks created by GenerateChain do not contain valid proof of work
-// values. Inserting them into BlockChain requires use of FakePow or
-// a similar non-validating proof of work implementation.
+// or delegated-proof-of-stake values. Inserting them into BlockChain
+// requires use of FakePow or a similar non-validating proof of work
+// or a non-validating delegated-proof-of-stake implementation.
 func GenerateChain(config *params.ChainConfig, parent *types.Block, engine consensus.Engine, db ethdb.Database, n int, gen func(int, *BlockGen)) ([]*types.Block, []types.Receipts) {
 	if config == nil {
 		config = params.TestChainConfig

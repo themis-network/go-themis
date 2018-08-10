@@ -42,7 +42,7 @@ var customGenesisTests = []struct {
 			"timestamp"  : "0x00"
 		}`,
 		query:  "eth.getBlock(0).nonce",
-		result: "0x0000000000000042",
+		result: "0x0000000000000000",
 	},
 	// Genesis file with an empty chain configuration (ensure missing fields work)
 	{
@@ -77,7 +77,7 @@ var customGenesisTests = []struct {
 				"homesteadBlock" : 314,
 				"daoForkBlock"   : 141,
 				"daoForkSupport" : true
-			},
+			}
 		}`,
 		query:  "eth.getBlock(0).nonce",
 		result: "0x0000000000000042",
