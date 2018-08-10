@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
-	"sort"
 	"sync"
 	"time"
 
@@ -540,92 +539,48 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		header.ProposedIBM.SetUint64(i)
 	}
 
-	err1 := getPendingProducers(header, chain, d.systemContract, d.Call)
-	if err1 != nil {
-		return err1
-	}
-	return nil
-}
-
-// TODO split; this method should only return producers
-func getPendingProducers(header *types.Header, chain consensus.ChainReader, systemContract *core.SystemContractCaller, Call CallContractFunc) error {
-	lastHeader := chain.CurrentHeader()
-	if header == nil {
-		return consensus.ErrUnknownAncestor
-	}
-
+	//set pendingproducers, pendingversion and ProposePendingProducersBlock
+	//first set default value
+	copy(header.PendingProducers, lastHeader.PendingProducers)
+	header.PendingVersion = lastHeader.PendingVersion
+	header.ProposePendingProducersBlock = header.Number
 	//the Newest block header of last epoch
 	lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
 	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
-
 	//if the first block of epoch, or pending version not update on the first block of current epoch
-	if header.Number.Uint64()%epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
-		//get top producers info by system contract
-		data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
-		if err != nil {
-			copy(header.PendingProducers, lastHeader.PendingProducers)
-			header.PendingVersion = lastHeader.PendingVersion
-			header.ProposePendingProducersBlock = header.Number
-			return nil
+	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
+		topProducers, err1 := getPendingProducers(lastHeader, d.systemContract, d.Call, lastHeader.Time.Uint64())
+		if  err1 == nil {
+			copy(header.PendingProducers, topProducers)
+			header.PendingVersion = lastHeader.PendingVersion + 1
+			header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
 		}
-		contractAddr := systemContract.GetRegSystemContractAddress(data)
-		data1, err1 := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
-		if err1 != nil {
-			copy(header.PendingProducers, lastHeader.PendingProducers)
-			header.PendingVersion = lastHeader.PendingVersion
-			header.ProposePendingProducersBlock = header.Number
-			return nil
-		}
-		producersAddr, weightsBig, amount, err2 := systemContract.GetAllProducersInfo(data1)
-		if err2 != nil {
-			copy(header.PendingProducers, lastHeader.PendingProducers)
-			header.PendingVersion = lastHeader.PendingVersion
-			header.ProposePendingProducersBlock = header.Number
-			return nil
-		}
-		var sortWeights sortNumSlice
-		for k, v := range weightsBig {
-			var tmp = &sortNum{
-				serial: k,
-				num:    (*v).Uint64(),
-			}
-			sortWeights = append(sortWeights, tmp)
-		}
-		sort.Sort(sortWeights)
-		var topProducers []common.Address
-		var i int64
-		for i = 0; i < amount.Int64(); i++ {
-			topProducers = append(topProducers, producersAddr[sortWeights[i].serial])
-		}
-
-		//rand top producers
-		seed := lastHeader.Time.Uint64()
-		rand := NewRandom(seed)
-		var randomNums sortNumSlice
-		for i = 0; i < amount.Int64(); i++ {
-			var tmp = &sortNum{
-				serial: int(i),
-				num:    rand.GenRandom(),
-			}
-			randomNums = append(randomNums, tmp)
-		}
-
-		sort.Sort(randomNums)
-
-		var newProducers []common.Address
-		for i = 0; i < amount.Int64(); i++ {
-			newProducers = append(newProducers, topProducers[randomNums[i].serial])
-		}
-
-		copy(header.PendingProducers, newProducers)
-		header.PendingVersion++
-		header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
-	} else {
-		copy(header.PendingProducers, lastHeader.PendingProducers)
-		header.PendingVersion = lastHeader.PendingVersion
-		header.ProposePendingProducersBlock = header.Number
 	}
+
 	return nil
+}
+
+func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc, seed uint64) ([]common.Address, error) {
+	//get top producers info by system contract
+	data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
+	if err != nil {
+		return nil, err
+	}
+	contractAddr := systemContract.GetRegSystemContractAddress(data)
+	data1, err1 := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
+	if err1 != nil {
+		return nil, err1
+	}
+	producersAddr, weightsBig, amount, err2 := systemContract.GetAllProducersInfo(data1)
+	if err2 != nil {
+		return nil, err2
+	}
+
+	topProducers, err3 := Shuffle(producersAddr, weightsBig, amount, seed)
+	if err3 != nil {
+		return nil, err3
+	}
+	return topProducers, nil
 }
 
 // Finalize implements consensus.Engine, ensuring no uncles are set and returns

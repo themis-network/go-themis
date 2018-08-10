@@ -1,7 +1,12 @@
-//reference http://xoshiro.di.unimi.it/
+//reference http://xoshiro.di.unimi.it/ xoshiro256**
 
 package dpos
 
+import (
+	"math/big"
+	"sort"
+	"github.com/themis-network/go-themis/common"
+)
 //for rand top producers
 type sortNum struct {
 	serial int
@@ -57,4 +62,41 @@ func (r *Random) GenRandom() uint64     {
 	return result
 }
 
-// TODO add Shuffle
+//shffule topProducers in random order 
+func Shuffle(producersAddr []common.Address, weightsBig[]*big.Int, amount *big.Int, seed uint64) ([]common.Address, error) {
+
+	var sortWeights sortNumSlice
+	for k, v := range weightsBig {
+		var tmp = &sortNum {
+			serial: k,
+			num: (*v).Uint64(),
+		}			
+		sortWeights = append(sortWeights, tmp)
+	}
+	sort.Sort(sortWeights)
+	var topProducers []common.Address
+	var i int64
+	for  i = 0; i < amount.Int64(); i++ {
+		topProducers = append(topProducers, producersAddr[sortWeights[i].serial])
+	}
+
+	//rand top producers
+	rand := NewRandom(seed)
+	var randomNums sortNumSlice
+	for i = 0; i < amount.Int64(); i++ {
+		var tmp = &sortNum {
+			serial: int(i),
+			num: rand.GenRandom(),
+		}
+		randomNums = append(randomNums, tmp)
+	}
+
+	sort.Sort(randomNums)
+
+	var newProducers []common.Address
+	for i = 0; i < amount.Int64(); i++ {
+		newProducers = append(newProducers, topProducers[randomNums[i].serial])
+	}
+
+	return newProducers, nil
+}
