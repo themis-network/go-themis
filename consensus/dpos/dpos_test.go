@@ -8,15 +8,17 @@ import (
 )
 
 func TestRandom(t *testing.T) {
+	testLen := 5
 	seed := uint64(time.Now().Unix())
 	if seed <= 0 {
 		t.Errorf("seed less than zero.")
 	}
 
-	rand := NewRandom(seed)
+	rand := NewRandom()
+	arr := rand.GenRandomForTest(seed, testLen)
 
-	for i := 0; i < 5; i++ {
-		fmt.Println(rand.GenRandom())
+	for i := 0; i < testLen; i++ {
+		fmt.Println((*arr)[i])
 	}
 }
 

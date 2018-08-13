@@ -176,6 +176,7 @@ type Dpos struct {
 
 	Call           CallContractFunc           // CallContractFunc is a message call func
 	systemContract *core.SystemContractCaller // System contract caller for dpos to get producers' info
+	rand *Random //for shuffle the pending producers
 }
 
 // New creates a Dpos delegated-proof-of-stake consensus engine with the initial
@@ -309,7 +310,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 			return errInvalidActiveProducerList
 		}
 	} else if header.PendingVersion == parent.PendingVersion+1 {
-		newProducers, err := getPendingProducers(parent, d.systemContract, d.Call)
+		newProducers, err := getPendingProducers(parent, d.systemContract, d.Call, d.rand)
 		if err != nil {
 			return errors.New("wrong pendingProduers")
 		}
@@ -565,7 +566,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
 	//if the first block of epoch, or pending version not update on the first block of current epoch
 	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
-		topProducers, err := getPendingProducers(lastHeader, d.systemContract, d.Call)
+		topProducers, err := getPendingProducers(lastHeader, d.systemContract, d.Call, d.rand)
 		if  err == nil {
 			copy(header.PendingProducers, topProducers)
 			header.PendingVersion = lastHeader.PendingVersion + 1
@@ -576,7 +577,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc) ([]common.Address, error) {
+func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc, rand *Random) ([]common.Address, error) {
 	//get top producers info by system contract
 	data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
 	if err != nil {
@@ -592,7 +593,7 @@ func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemCo
 		return nil, err
 	}
 
-	topProducers, err := Shuffle(producersAddr, weightsBig, amount, lastHeader.Time.Uint64())
+	topProducers, err := rand.Shuffle(producersAddr, weightsBig, amount, lastHeader.Time.Uint64())
 	if err != nil {
 		return nil, err
 	}
