@@ -340,8 +340,8 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 			return errors.New("cannot find the ProposePendingProducersBlock")
 		}
 
-		// Check parent.dpos-parent.ProposePendingProducersBlock > 0
-		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) > 0 {
+		// Check parent.dpos-parent.ProposePendingProducersBlock == 0
+		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) != 0 {
 			return errors.New("wrong ActiveProducers List")
 		}
 
@@ -520,7 +520,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	copy(header.Nonce[:], nonce[:])
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
-	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) <= 0 {
+	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
 		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
 	} else {
