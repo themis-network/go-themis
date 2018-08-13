@@ -446,13 +446,13 @@ func (s *Ethereum) Stop() error {
 // TODO update
 func (s *Ethereum) callContract(message core.SystemCall) ([]byte, error) {
 	ctx := context.Background()
-	header := s.blockchain.GetBlockByNumber(message.AtBlock)
-	statedb, err := s.blockchain.StateAt(header.Root())
+	block := s.blockchain.GetBlockByNumber(message.AtBlock)
+	statedb, err := s.blockchain.StateAt(block.Root())
 	if err != nil {
 		return nil, err
 	}
 	
-	evm, vmError, err := s.APIBackend.GetEVM(ctx, message, statedb, header.Header(), vm.Config{})
+	evm, vmError, err := s.APIBackend.GetEVM(ctx, message, statedb, block.Header(), vm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -466,7 +466,7 @@ func (s *Ethereum) callContract(message core.SystemCall) ([]byte, error) {
 		return nil, err
 	}
 	if failed == true {
-		return nil, errors.New("")
+		return nil, errors.New("evm call failed")
 	}
 	
 	return res, nil
