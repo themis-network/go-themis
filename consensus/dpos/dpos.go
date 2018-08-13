@@ -91,8 +91,24 @@ var (
 	// errInvalidUncleHash is returned if a block contains an non-empty uncle list.
 	errInvalidUncleHash = errors.New("non empty uncle hash")
 
-	// errInvalidNonce if a block's nonce is non-zero
+	// errInvalidNonce if a block's nonce is non-zero.
 	errInvalidNonce = errors.New("non-zero nonce")
+	
+	// errInvalidPendingProducersVersion is returned if pending producers version bigger
+	// than parent.pendingProducersVersion+1 or less than parent.endingProducersVersion
+	errInvalidPendingProducersVersion = errors.New("invalid pending producers version")
+	
+	// errInvalidActiveProducersVersion is returned if active producers version bigger
+	// than parent.activeProducersVersion+1 or less than parent.activeProducersVersion
+	errInvalidActiveProducersVersion = errors.New("invalid active producers version")
+	
+	// errMissPendingProducersBlock is returned if can not find proposing pending producers
+	// block when pending producer version increased.
+	errMissPendingProducersBlock = errors.New("miss block of proposing pending producers")
+	
+	// errInvalidDposIBM is returned if dposIBM isn't equal parent.dposIBM and isn't equal
+	// parent.proposeIBM
+	errInvalidDposIBM = errors.New("invalid dpos irreversible block num")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -312,24 +328,26 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	} else if header.PendingVersion == parent.PendingVersion+1 {
 		newProducers, err := getPendingProducers(parent, d.systemContract, d.Call, d.rand)
 		if err != nil {
-			return errors.New("wrong pendingProduers")
+			return errInvalidPendingProducerList
 		}
 		if !compareProducers(header.PendingProducers, newProducers) {
-			return errInvalidActiveProducerList
+			return errInvalidPendingProducerList
 		}
-	} else {
-		return errors.New("wrong PendingVersion")
+	}
+	// header.pendingVersion can not bigger than parent.PendingVersion+1 or smaller than parent.PendingVersion
+	if header.PendingVersion > parent.PendingVersion+1 || header.PendingVersion < parent.PendingVersion {
+		return errInvalidPendingProducersVersion
 	}
 
 	// verify the ActiveProducers
-	if header.ActiveVersion == parent.ActiveVersion {
-		// Producer list must be same as long as version is the same
-		if !compareProducers(header.ActiveProducers, parent.ActiveProducers) {
-			return errInvalidActiveProducerList
-		}
-	} else if header.ActiveVersion == parent.ActiveVersion+1 {
+	// Producer list must be same as long as version is the same
+	if header.ActiveVersion == parent.ActiveVersion && !compareProducers(header.ActiveProducers, parent.ActiveProducers) {
+		return errInvalidActiveProducerList
+	}
+	// Check active producers list
+	if header.ActiveVersion == parent.ActiveVersion+1 {
 		temp := chain.GetHeaderByNumber(parent.ProposePendingProducersBlock.Uint64())
-		// TODO necessary
+		// Try to get header from parents(may not be inserted into chain)
 		if temp == nil {
 			for h := len(parents); h >= 0; h-- {
 				if parent.ProposePendingProducersBlock.Uint64() == parents[h].Number.Uint64() {
@@ -338,29 +356,26 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 			}
 		}
 		if temp == nil {
-			return errors.New("cannot find the ProposePendingProducersBlock")
+			return errMissPendingProducersBlock
 		}
 
 		// Check parent.dpos-parent.ProposePendingProducersBlock == 0
 		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) != 0 {
-			return errors.New("wrong ActiveProducers List")
+			return errInvalidActiveProducerList
 		}
 
 		if !compareAddressList(header.ActiveProducers, temp.PendingProducers) {
-			return errors.New("wrong ActiveProducers List")
+			return errInvalidActiveProducerList
 		}
-	} else {
-		return errors.New("wrong ActiveProducers List")
+	}
+	if header.ActiveVersion < parent.ActiveVersion || header.ActiveVersion >= parent.ActiveVersion+1 {
+		return errInvalidActiveProducersVersion
 	}
 
 	// verify DposIBM
 	// TODO two different situation should be verified different
-	if header.DposIBM == parent.DposIBM {
-
-	} else if header.DposIBM == parent.ProposedIBM {
-
-	} else {
-		return errors.New("wrong DposIBM")
+	if header.DposIBM != parent.DposIBM && header.DposIBM != parent.ProposedIBM {
+		return errInvalidDposIBM
 	}
 
 	//verify ProposedIBM
@@ -370,7 +385,6 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	for ; i != header.ProposedIBM.Uint64(); i-- {
 
 		iheader := chain.GetHeaderByNumber(i)
-		// TODO Not necessary
 		if iheader == nil {
 			for _, h := range parents {
 				if i == h.Number.Uint64() {
