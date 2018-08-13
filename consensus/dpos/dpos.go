@@ -302,7 +302,23 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		return consensus.ErrUnknownAncestor
 	}
 
-	// TODO add verify pending producer list
+	//verify pending producer list
+	if header.PendingVersion == parent.PendingVersion {
+		// Producer list must be same as long as version is the same
+		if !compareProducers(header.PendingProducers, parent.PendingProducers) {
+			return errInvalidActiveProducerList
+		}
+	} else if header.PendingVersion == parent.PendingVersion+1 {
+		newProducers, err := getPendingProducers(parent, d.systemContract, d.Call)
+		if err != nil {
+			return errors.New("wrong pendingProduers")
+		}
+		if !compareProducers(header.PendingProducers, newProducers) {
+			return errInvalidActiveProducerList
+		}
+	} else {
+		return errors.New("wrong PendingVersion")
+	}
 
 	// verify the ActiveProducers
 	if header.ActiveVersion == parent.ActiveVersion {
@@ -324,8 +340,8 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 			return errors.New("cannot find the ProposePendingProducersBlock")
 		}
 
-		// Check parent.dpos-parent.ProposePendingProducersBlock == 0
-		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) != 0 {
+		// Check parent.dpos-parent.ProposePendingProducersBlock > 0
+		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) > 0 {
 			return errors.New("wrong ActiveProducers List")
 		}
 
@@ -504,7 +520,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	copy(header.Nonce[:], nonce[:])
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
-	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
+	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) <= 0 {
 		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
 	} else {
@@ -549,8 +565,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
 	//if the first block of epoch, or pending version not update on the first block of current epoch
 	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
-		topProducers, err1 := getPendingProducers(lastHeader, d.systemContract, d.Call, lastHeader.Time.Uint64())
-		if  err1 == nil {
+		topProducers, err := getPendingProducers(lastHeader, d.systemContract, d.Call)
+		if  err == nil {
 			copy(header.PendingProducers, topProducers)
 			header.PendingVersion = lastHeader.PendingVersion + 1
 			header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
@@ -560,25 +576,25 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc, seed uint64) ([]common.Address, error) {
+func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc) ([]common.Address, error) {
 	//get top producers info by system contract
 	data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
 	if err != nil {
 		return nil, err
 	}
 	contractAddr := systemContract.GetRegSystemContractAddress(data)
-	data1, err1 := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
-	if err1 != nil {
-		return nil, err1
+	data1, err := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
+	if err != nil {
+		return nil, err
 	}
-	producersAddr, weightsBig, amount, err2 := systemContract.GetAllProducersInfo(data1)
-	if err2 != nil {
-		return nil, err2
+	producersAddr, weightsBig, amount, err := systemContract.GetAllProducersInfo(data1)
+	if err != nil {
+		return nil, err
 	}
 
-	topProducers, err3 := Shuffle(producersAddr, weightsBig, amount, seed)
-	if err3 != nil {
-		return nil, err3
+	topProducers, err := Shuffle(producersAddr, weightsBig, amount, lastHeader.Time.Uint64())
+	if err != nil {
+		return nil, err
 	}
 	return topProducers, nil
 }
