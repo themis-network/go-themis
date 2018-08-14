@@ -106,9 +106,15 @@ var (
 	// block when pending producer version increased.
 	errMissPendingProducersBlock = errors.New("miss block of proposing pending producers")
 	
-	// errInvalidDposIBM is returned if dposIBM isn't equal parent.dposIBM and isn't equal
-	// parent.proposeIBM
-	errInvalidDposIBM = errors.New("invalid dpos irreversible block num")
+	// errInvalidPendingProducerBlock is returned if pending producer list isn't proposed
+	// second time during one block epoch.
+	errInvalidPendingProducerBlock = errors.New("invalid pending producer block")
+	
+	// errInvalidIBM is returned if irreversible block num isn't compliance with the rules
+	errInvalidIBM = errors.New("invalid dpos irreversible block num")
+	
+	// errTooFewProducers is returned if can't get enough producers from system contract.
+	errTooFewProducers = errors.New("too few producers")
 )
 
 // SignerFn is a signer callback function to request a hash to be signed by a
@@ -206,6 +212,7 @@ func New(config *params.DposConfig) *Dpos {
 		config:         &conf,
 		systemContract: core.NewSystemContractCaller(),
 		signatures:     signatures,
+		rand: NewRandom(0),
 	}
 }
 
@@ -291,18 +298,6 @@ func (d *Dpos) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	return d.verifyDposField(chain, header, parents)
 }
 
-func compareAddressList(a []common.Address, b []common.Address) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i != len(b); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	// The genesis block is the always valid dead-end
 	number := header.Number.Uint64()
@@ -318,19 +313,21 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-
-	//verify pending producer list
-	if header.PendingVersion == parent.PendingVersion {
-		// Producer list must be same as long as version is the same
-		if !compareProducers(header.PendingProducers, parent.PendingProducers) {
+	
+	// Verify pending producer list
+	if header.PendingVersion == parent.PendingVersion && !compareProducers(header.PendingProducers, parent.PendingProducers) {
 			return errInvalidActiveProducerList
+	}
+	// Call system contract to check proposed pending producer
+	if header.PendingVersion == parent.PendingVersion+1 {
+		// Valid propose pending block
+		lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
+		lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
+		if lastEpochBlockNewest == nil || parent.PendingVersion - lastEpochBlockNewest.PendingVersion != 0 {
+		    return errInvalidPendingProducerBlock
 		}
-	} else if header.PendingVersion == parent.PendingVersion+1 {
-		newProducers, err := getPendingProducers(parent, d.systemContract, d.Call, d.rand)
-		if err != nil {
-			return errInvalidPendingProducerList
-		}
-		if !compareProducers(header.PendingProducers, newProducers) {
+		newProducers, err := d.getPendingProducers(parent)
+		if err != nil || !compareProducers(header.PendingProducers, newProducers) {
 			return errInvalidPendingProducerList
 		}
 	}
@@ -339,7 +336,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		return errInvalidPendingProducersVersion
 	}
 
-	// verify the ActiveProducers
+	// Verify the ActiveProducers
 	// Producer list must be same as long as version is the same
 	if header.ActiveVersion == parent.ActiveVersion && !compareProducers(header.ActiveProducers, parent.ActiveProducers) {
 		return errInvalidActiveProducerList
@@ -364,52 +361,54 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 			return errInvalidActiveProducerList
 		}
 
-		if !compareAddressList(header.ActiveProducers, temp.PendingProducers) {
+		if !compareProducers(header.ActiveProducers, temp.PendingProducers) {
 			return errInvalidActiveProducerList
 		}
 	}
 	if header.ActiveVersion < parent.ActiveVersion || header.ActiveVersion >= parent.ActiveVersion+1 {
 		return errInvalidActiveProducersVersion
 	}
-
-	// verify DposIBM
-	// TODO two different situation should be verified different
-	if header.DposIBM != parent.DposIBM && header.DposIBM != parent.ProposedIBM {
-		return errInvalidDposIBM
-	}
-
-	//verify ProposedIBM
+	
+	// Verify ProposedIBM and DposIBM
+	producerSize := len(parent.ActiveProducers)
 	proposed := false
-	proposedList := set{0, make([]list, 21)}
-	i := header.Number.Uint64()
-	for ; i != header.ProposedIBM.Uint64(); i-- {
-
+	proposedList := set{0, make([]list, producerSize)}
+	i := parent.Number.Uint64()
+	for ; i != parent.ProposedIBM.Uint64(); i-- {
 		iheader := chain.GetHeaderByNumber(i)
 		if iheader == nil {
-			for _, h := range parents {
-				if i == h.Number.Uint64() {
-					iheader = h
+			for h := len(parents)-1; h >= 0; h-- {
+				if i == parents[h].Number.Uint64() {
+					iheader = parents[h]
 				}
 			}
 		}
 		if iheader == nil {
 			continue
 		}
-
-		// TODO try mapping and compare version
+		
 		if proposedList.find(iheader.Coinbase[:]) {
 			continue
 		} else {
 			proposedList.insert(iheader.Coinbase[:])
 		}
-		if proposedList.size > (len(iheader.ActiveProducers)*2/3 + 1) {
+		if proposedList.size > (producerSize*2/3 + 1) {
 			proposed = true
 			break
 		}
 	}
-	if !proposed {
-		return errors.New("wrong ProposedIBM")
+	// Header.dposIBM and header.proposedIBM should be same with parent if not proposed
+	if !proposed && (parent.DposIBM.Cmp(header.DposIBM) != 0 || parent.ProposedIBM.Cmp(header.ProposedIBM) != 0) {
+		return errInvalidIBM
 	}
+	// Header.dposIBM and header.proposedIBM should be the latest confirmed block related.
+	if proposed {
+		proposedBlock := chain.GetHeaderByNumber(i)
+		if proposedBlock == nil || proposedBlock.ProposedIBM.Cmp(header.DposIBM) != 0 || header.ProposedIBM.Uint64()-i != 0 {
+			return errInvalidIBM
+		}
+	}
+	
 	return d.verifySeal(chain, header, parents)
 }
 
@@ -470,6 +469,16 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 	if number == 0 {
 		return nil, errUnknownBlock
 	}
+	
+	lastHeader := chain.CurrentHeader()
+	
+	// Calculate next block time, will return err is header.coinBase is unauthorized.
+	myBlockTime, err := calculateNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	if err != nil {
+		return nil, err
+	}
+	// Set block time
+	header.Time.SetUint64(myBlockTime)
 
 	// Don't hold the signer fields for the entire sealing procedure
 	d.lock.RLock()
@@ -478,10 +487,6 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 
 	if !bytes.Equal(signer[:], header.Coinbase[:]) {
 		return nil, errInvalidCoinbase
-	}
-
-	if _, err := getSignerIndex(chain.CurrentHeader(), header.Coinbase); err != nil {
-		return nil, err
 	}
 
 	// Sweet, the protocol permits us to sign the block, wait for our time
@@ -508,17 +513,8 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 // header for running the transactions on top.
 func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	// Set default field
-	// Try to propose a new pending producers scheme when epoch start
 	lastHeader := chain.CurrentHeader()
-	// TODO move this to seal (will cause error at here)
-	// Calculate next block time, will return err is header.coinBase is unauthorized.
-	myBlockTime, err := calculateNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
-	if err != nil {
-		return err
-	}
-	// Set block time
-	header.Time.SetUint64(myBlockTime)
-
+	
 	// Set the correct difficulty
 	header.Difficulty = difficulty
 
@@ -533,24 +529,34 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 
 	// Set nonce
 	copy(header.Nonce[:], nonce[:])
+	
+	// Set default pendingProducers, pendingVersion and ProposePendingProducersBlock
+	// dposIBM, proposedIBM
+	copy(header.PendingProducers, lastHeader.PendingProducers)
+	header.PendingVersion = lastHeader.PendingVersion
+	header.ProposePendingProducersBlock.Set(lastHeader.ProposePendingProducersBlock)
+	header.DposIBM.Set(lastHeader.DposIBM)
+	header.ProposedIBM.Set(lastHeader.ProposedIBM)
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
 	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
-		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
+		copy(header.ActiveProducers, chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers)
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
 	} else {
-		header.ActiveProducers = lastHeader.ActiveProducers
+		copy(header.ActiveProducers, lastHeader.ActiveProducers)
 		header.ActiveVersion = lastHeader.ActiveVersion
 	}
 
+	producerSize := len(lastHeader.ActiveProducers)
 	proposed := false
-	proposedList := set{0, make([]list, 21)}
+	proposedList := set{0, make([]list, producerSize)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
-	i := header.Number.Uint64()
-	for ; i != header.ProposedIBM.Uint64(); i-- {
+	i := lastHeader.Number.Uint64()
+	for ; i != lastHeader.ProposedIBM.Uint64(); i-- {
 
 		iheader := chain.GetHeaderByNumber(i)
-		if iheader.ActiveVersion != header.ActiveVersion {
+		if iheader.ActiveVersion != lastHeader.ActiveVersion {
+			log.Info("Can't propose a new proposedIBM during producer list changed")
 			break
 		}
 
@@ -559,58 +565,69 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		} else {
 			proposedList.insert(iheader.Coinbase[:])
 		}
-		if proposedList.size > (len(iheader.ActiveProducers)*2/3 + 1) {
+		if proposedList.size > (producerSize*2/3 + 1) {
 			proposed = true
 			break
 		}
 	}
 	// Try to propose a new dposIBM block(set dposIBM block num)
 	if proposed {
-		header.DposIBM = header.ProposedIBM
+		header.DposIBM.Set(chain.GetHeaderByNumber(i).ProposedIBM)
 		header.ProposedIBM.SetUint64(i)
 	}
-
-	//set pendingproducers, pendingversion and ProposePendingProducersBlock
-	//first set default value
-	copy(header.PendingProducers, lastHeader.PendingProducers)
-	header.PendingVersion = lastHeader.PendingVersion
-	header.ProposePendingProducersBlock = header.Number
-	//the Newest block header of last epoch
+	
+	// The Newest block header of last epoch
 	lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
 	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
-	//if the first block of epoch, or pending version not update on the first block of current epoch
-	if header.Number.Uint64() % epochLength == 0 || (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1 {
-		topProducers, err := getPendingProducers(lastHeader, d.systemContract, d.Call, d.rand)
+	// Try to propose a new pending producers scheme when epoch start or pending version not update on the first block of current epoch
+	pendingVersionNotUpdated := lastEpochBlockNewest != nil && (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1
+	if header.Number.Uint64() % epochLength == 0 || pendingVersionNotUpdated {
+		topProducers, err := d.getPendingProducers(lastHeader)
 		if  err == nil {
 			copy(header.PendingProducers, topProducers)
 			header.PendingVersion = lastHeader.PendingVersion + 1
-			header.ProposePendingProducersBlock.Add(header.ProposePendingProducersBlock, new(big.Int).SetUint64(1))
+			header.ProposePendingProducersBlock.Set(header.Number)
 		}
 	}
 
 	return nil
 }
 
-func getPendingProducers(lastHeader *types.Header, systemContract *core.SystemContractCaller, Call CallContractFunc, rand *Random) ([]common.Address, error) {
+func (d *Dpos) getPendingProducers(lastHeader *types.Header) ([]common.Address, error) {
 	//get top producers info by system contract
-	data, err := Call(systemContract.GetRegSystemContractCall(lastHeader))
+	regContractAddrBytes, err := d.Call(d.systemContract.GetRegSystemContractCall(lastHeader))
 	if err != nil {
 		return nil, err
 	}
-	contractAddr := systemContract.GetRegSystemContractAddress(data)
-	data1, err := Call(systemContract.GetAllProducersInfoCall(lastHeader, &contractAddr))
+	regContractAddr := d.systemContract.GetRegSystemContractAddress(regContractAddrBytes)
+	producerInfo, err := d.Call(d.systemContract.GetAllProducersInfoCall(lastHeader, &regContractAddr))
 	if err != nil {
 		return nil, err
 	}
-	producersAddr, weightsBig, amount, err := systemContract.GetAllProducersInfo(data1)
+	producersAddr, weight, amount, err := d.systemContract.GetAllProducersInfo(producerInfo)
 	if err != nil {
 		return nil, err
 	}
-
-	topProducers, err := rand.Shuffle(producersAddr, weightsBig, amount, lastHeader.Time.Uint64())
-	if err != nil {
-		return nil, err
+	// Cancel proposal if can not get enough producers
+	if amount.Uint64() > uint64(len(weight)) {
+		return nil, errTooFewProducers
 	}
+	
+	// Get top weight producers
+	var i uint64
+	sortTable := sortNumSlice{}
+	for i, voteWeight := range weight {
+		sortTable = append(sortTable, &sortNum{i, voteWeight.Uint64()})
+	}
+	sortedProducers := sortTable.GetTop(amount.Uint64())
+	topProducers := make([]common.Address, 0)
+	for i = 0; i < amount.Uint64(); i++ {
+		topProducers = append(topProducers, producersAddr[sortedProducers[i].serial])
+	}
+	
+	// Get pseudo-random order
+	d.rand.ResetSeed(lastHeader.Number.Uint64())
+	d.rand.Shuffle(topProducers)
 	return topProducers, nil
 }
 
