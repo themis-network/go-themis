@@ -44,6 +44,22 @@ func TestSortNumSlice(t *testing.T) {
     }
 }
 
+func TestRandomShuffleEqual(t *testing.T) {
+    copyedAddress := make([]common.Address, 0)
+    for _, v := range originalAddress {
+        copyedAddress = append(copyedAddress, v)
+    }
+    
+    seed := uint64(200)
+    random := NewRandom(seed)
+    random.Shuffle(copyedAddress)
+    
+    // The possibility of getting same order with original producers is very small.
+    if compareProducers(originalAddress, copyedAddress) {
+        t.Errorf("producer's order not changed")
+    }
+}
+
 func TestRandomShuffle(t *testing.T) {
     copyedAddress := make([]common.Address, 0)
     for _, v := range originalAddress {
@@ -58,7 +74,7 @@ func TestRandomShuffle(t *testing.T) {
     random.Shuffle(copyedAddress)
     
     if !compareProducers(originalAddress, copyedAddress) {
-        t.Errorf("can get same pseudo-random order of producers, first %v, sencond %v", originalAddress, copyedAddress)
+        t.Errorf("can't get same pseudo-random order of producers, first %v, sencond %v", originalAddress, copyedAddress)
     }
 }
 
