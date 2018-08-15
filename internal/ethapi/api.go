@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/themis-network/go-themis/accounts"
 	"github.com/themis-network/go-themis/accounts/keystore"
 	"github.com/themis-network/go-themis/common"
@@ -42,8 +44,6 @@ import (
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 const (
@@ -796,23 +796,30 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	head := b.Header() // copies the header once
 	fields := map[string]interface{}{
-		"number":           (*hexutil.Big)(head.Number),
-		"hash":             b.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixDigest,
-		"sha3Uncles":       head.UncleHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
-		"difficulty":       (*hexutil.Big)(head.Difficulty),
-		"extraData":        hexutil.Bytes(head.Extra),
-		"size":             hexutil.Uint64(b.Size()),
-		"gasLimit":         hexutil.Uint64(head.GasLimit),
-		"gasUsed":          hexutil.Uint64(head.GasUsed),
-		"timestamp":        (*hexutil.Big)(head.Time),
-		"transactionsRoot": head.TxHash,
-		"receiptsRoot":     head.ReceiptHash,
+		"number":                       (*hexutil.Big)(head.Number),
+		"hash":                         b.Hash(),
+		"parentHash":                   head.ParentHash,
+		"nonce":                        head.Nonce,
+		"mixHash":                      head.MixDigest,
+		"sha3Uncles":                   head.UncleHash,
+		"logsBloom":                    head.Bloom,
+		"stateRoot":                    head.Root,
+		"miner":                        head.Coinbase,
+		"difficulty":                   (*hexutil.Big)(head.Difficulty),
+		"extraData":                    hexutil.Bytes(head.Extra),
+		"size":                         hexutil.Uint64(b.Size()),
+		"gasLimit":                     hexutil.Uint64(head.GasLimit),
+		"gasUsed":                      hexutil.Uint64(head.GasUsed),
+		"timestamp":                    (*hexutil.Big)(head.Time),
+		"transactionsRoot":             head.TxHash,
+		"receiptsRoot":                 head.ReceiptHash,
+		"pendingProducers":             head.PendingProducers,
+		"pendingVersion":               hexutil.Uint64(head.PendingVersion),
+		"ProposePendingProducersBlock": (*hexutil.Big)(head.ProposePendingProducersBlock),
+		"activeProducers":              head.ActiveProducers,
+		"activeVersion":                hexutil.Uint64(head.ActiveVersion),
+		"proposedIBM":                  (*hexutil.Big)(head.ProposedIBM),
+		"dposIBM":                      (*hexutil.Big)(head.DposIBM),
 	}
 
 	if inclTx {

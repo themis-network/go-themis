@@ -534,9 +534,9 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// dposIBM, proposedIBM
 	copy(header.PendingProducers, lastHeader.PendingProducers)
 	header.PendingVersion = lastHeader.PendingVersion
-	header.ProposePendingProducersBlock.Set(lastHeader.ProposePendingProducersBlock)
-	header.DposIBM.Set(lastHeader.DposIBM)
-	header.ProposedIBM.Set(lastHeader.ProposedIBM)
+	header.ProposePendingProducersBlock = lastHeader.ProposePendingProducersBlock
+	header.DposIBM = lastHeader.DposIBM
+	header.ProposedIBM = lastHeader.ProposedIBM
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
 	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
