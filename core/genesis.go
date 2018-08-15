@@ -268,8 +268,11 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		head.Difficulty = params.GenesisDifficulty
 	}
 	if g.Config != nil && g.Config.Dpos != nil && g.Config.Dpos.Producers != nil {
-		producers := make([]common.Address, len(g.Config.Dpos.Producers))
+		producers := make([]common.Address, 0)
 		for _, producer := range g.Config.Dpos.Producers {
+			if producer.Address == common.BytesToAddress([]byte{0}) {
+				continue
+			}
 			producers = append(producers, producer.Address)
 		}
 		head.ActiveProducers = producers

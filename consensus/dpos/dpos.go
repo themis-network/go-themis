@@ -523,6 +523,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		header.Extra = append(header.Extra, bytes.Repeat([]byte{0x00}, extraVanity-len(header.Extra))...)
 	}
 	header.Extra = header.Extra[:extraVanity]
+	header.Extra = append(header.Extra, make([]byte, extraSeal)...)
 
 	// Mix digest is reserved for now, set to empty
 	header.MixDigest = common.Hash{}
@@ -532,21 +533,22 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	
 	// Set default pendingProducers, pendingVersion and ProposePendingProducersBlock
 	// dposIBM, proposedIBM
+	header.PendingProducers = make([]common.Address, len(lastHeader.PendingProducers))
+	header.ActiveProducers = make([]common.Address, len(lastHeader.ActiveProducers))
 	copy(header.PendingProducers, lastHeader.PendingProducers)
+	copy(header.ActiveProducers, lastHeader.ActiveProducers)
 	header.PendingVersion = lastHeader.PendingVersion
 	header.ProposePendingProducersBlock = lastHeader.ProposePendingProducersBlock
 	header.DposIBM = lastHeader.DposIBM
 	header.ProposedIBM = lastHeader.ProposedIBM
+	header.ActiveVersion = lastHeader.ActiveVersion
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
-	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
-		copy(header.ActiveProducers, chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers)
+	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 && lastHeader.ProposePendingProducersBlock.Uint64() != 0 {
+		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
-	} else {
-		copy(header.ActiveProducers, lastHeader.ActiveProducers)
-		header.ActiveVersion = lastHeader.ActiveVersion
 	}
-
+	
 	producerSize := len(lastHeader.ActiveProducers)
 	proposed := false
 	proposedList := set{0, make([]list, producerSize)}
@@ -556,7 +558,6 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 
 		iheader := chain.GetHeaderByNumber(i)
 		if iheader.ActiveVersion != lastHeader.ActiveVersion {
-			log.Info("Can't propose a new proposedIBM during producer list changed")
 			break
 		}
 
@@ -584,7 +585,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	if header.Number.Uint64() % epochLength == 0 || pendingVersionNotUpdated {
 		topProducers, err := d.getPendingProducers(lastHeader)
 		if  err == nil {
-			copy(header.PendingProducers, topProducers)
+			header.PendingProducers = topProducers
 			header.PendingVersion = lastHeader.PendingVersion + 1
 			header.ProposePendingProducersBlock.Set(header.Number)
 		}
@@ -676,6 +677,20 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 	}
 	if grandParent == nil && parent.Number.Uint64() > 0 {
 		return 0, errInvalidGrandParent
+	}
+	
+	// Seal first block, check time distance between genesis.timestamp and local time
+	if parent.Number.Uint64() == 0 {
+		localTime := time.Now()
+		startBase := parent.Time.Uint64()
+		if time.Unix(parent.Time.Int64(), 0).Sub(localTime) < 0 {
+			distance := (uint64(localTime.Unix()) - parent.Time.Uint64()) / uint64(len(parent.ActiveProducers)) / blockPeriod + 1
+			startBase += distance * uint64(len(parent.ActiveProducers)) * blockPeriod
+		}
+		
+		waitBlock := currentSignerIndex + 1
+		waitBlockTime := uint64(waitBlock) * blockPeriod
+		return startBase + waitBlockTime, nil
 	}
 
 	// Start a new active producers or first sealed block
