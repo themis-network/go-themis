@@ -694,7 +694,7 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 	}
 
 	// Start a new active producers or first sealed block
-	if parent.Number.Uint64() == 0 || grandParent.ActiveVersion != parent.ActiveVersion {
+	if grandParent.ActiveVersion != parent.ActiveVersion {
 		// This block is the first block applying new active producers and will start a new epoch
 		// NextBlockTime = parent.time + blockPeriod * (index + 1)
 		waitBlock := currentSignerIndex + 1
@@ -722,9 +722,29 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 
 // verifyBlockTime
 func verifyBlockTime(grandParent *types.Header, parent *types.Header, header *types.Header) error {
-	rightTime, err := calculateNextBlockTime(grandParent, parent, header.Coinbase)
+	// Assume grandParent and parent have been verified.
+	currentSignerIndex, err := getSignerIndex(parent, header.Coinbase)
 	if err != nil {
 		return err
+	}
+	
+	if grandParent == nil && parent.Number.Uint64() > 0 {
+		return errInvalidGrandParent
+	}
+	
+	// Verify first block sealed specially
+	if parent.Number.Uint64() == 0 {
+		waitBlock := currentSignerIndex + 1
+		waitBlockTime := uint64(waitBlock) * blockPeriod
+		if (header.Time.Uint64() - waitBlockTime - parent.Time.Uint64()) % (uint64(len(parent.ActiveProducers)) * blockPeriod) != 0 {
+			return errInvalidBlockTime
+		}
+		return nil
+	}
+	
+	rightTime, err := calculateNextBlockTime(grandParent, parent, header.Coinbase)
+	if err != nil {
+		return nil
 	}
 	if rightTime != header.Time.Uint64() {
 		return errInvalidBlockTime
