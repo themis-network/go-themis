@@ -22,6 +22,9 @@ func (s *set) insert(a []byte) {
 	s.size++
 	x := big.NewInt(0)
 	x.SetBytes(a)
+	if len(s.bucket) == 0 {
+		s.bucket = make([]list, 21)
+	}
 	x.Mod(x, big.NewInt(int64(len(s.bucket))))
 	num := x.Uint64()
 	if s.bucket[num].size == 0 {
