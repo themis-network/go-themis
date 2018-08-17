@@ -472,8 +472,8 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 
 	lastHeader := chain.CurrentHeader()
 
-	// Calculate next block time, will return err is header.coinBase is unauthorized.
-	myBlockTime, err := calculateNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	// Get next block time, will return err is header.coinBase is unauthorized.
+	myBlockTime, err := getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
 	if err != nil {
 		return nil, err
 	}
@@ -669,6 +669,20 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
+func getNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
+	blockTime, err := calculateNextBlockTime(grandParent, parent, signer)
+	if err != nil {
+		return 0, err
+	}
+	
+	// Get block time smaller than local time, add blockPeriod * producerSize to reach localTime
+	if blockTime < uint64(time.Now().Unix()) {
+		blockTime = reachAfterLocalTime(blockTime, uint64(time.Now().Unix()), len(parent.ActiveProducers))
+	}
+	
+	return blockTime, nil
+}
+
 // calculateNextBlockTime returns next block time
 func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
 	// Assume grandParent and parent have been verified.
@@ -680,22 +694,8 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 		return 0, errInvalidGrandParent
 	}
 
-	// Seal first block, check time distance between genesis.timestamp and local time
-	if parent.Number.Uint64() == 0 {
-		localTime := time.Now()
-		startBase := parent.Time.Uint64()
-		if time.Unix(parent.Time.Int64(), 0).Sub(localTime) < 0 {
-			distance := (uint64(localTime.Unix())-parent.Time.Uint64())/uint64(len(parent.ActiveProducers))/blockPeriod + 1
-			startBase += distance * uint64(len(parent.ActiveProducers)) * blockPeriod
-		}
-
-		waitBlock := currentSignerIndex + 1
-		waitBlockTime := uint64(waitBlock) * blockPeriod
-		return startBase + waitBlockTime, nil
-	}
-
 	// Start a new active producers or first sealed block
-	if grandParent.ActiveVersion != parent.ActiveVersion {
+	if parent.Number.Uint64() == 0 || grandParent.ActiveVersion != parent.ActiveVersion {
 		// This block is the first block applying new active producers and will start a new epoch
 		// NextBlockTime = parent.time + blockPeriod * (index + 1)
 		waitBlock := currentSignerIndex + 1
@@ -732,26 +732,41 @@ func verifyBlockTime(grandParent *types.Header, parent *types.Header, header *ty
 	if grandParent == nil && parent.Number.Uint64() > 0 {
 		return errInvalidGrandParent
 	}
+	
+	producerSize := uint64(len(parent.ActiveProducers))
 
-	// Verify first block sealed specially
-	if parent.Number.Uint64() == 0 {
+	// Verify first block of a new active producer version sealed specially
+	if parent.Number.Uint64() == 0 || grandParent.ActiveVersion != parent.ActiveVersion {
 		waitBlock := currentSignerIndex + 1
 		waitBlockTime := uint64(waitBlock) * blockPeriod
-		if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(uint64(len(parent.ActiveProducers))*blockPeriod) != 0 {
+		if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*blockPeriod) != 0 {
 			return errInvalidBlockTime
 		}
 		return nil
 	}
-
-	rightTime, err := calculateNextBlockTime(grandParent, parent, header.Coinbase)
+	
+	// Calculate block time based on same producer version
+	parentSignerIndex, err := getSignerIndex(grandParent, parent.Coinbase)
 	if err != nil {
-		return nil
+		return err
 	}
-	if rightTime != header.Time.Uint64() {
+	
+	waitBlock := currentSignerIndex - parentSignerIndex
+	// At the next block epoch
+	if waitBlock <= 0 {
+		waitBlock += int64(len(parent.ActiveProducers))
+	}
+	waitBlockTime := uint64(waitBlock) * blockPeriod
+	if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*blockPeriod) != 0 {
 		return errInvalidBlockTime
 	}
 
 	return nil
+}
+
+func reachAfterLocalTime(originalBlockTime, localTime uint64, producerSize int) uint64 {
+	distance := (localTime - originalBlockTime) / blockPeriod / uint64(producerSize) + 1
+	return distance * blockPeriod * uint64(producerSize) + originalBlockTime
 }
 
 // getSignerIndex returns index of signer in header.activeProducers, otherwise an error
