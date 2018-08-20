@@ -21,9 +21,9 @@ const (
     voteSystemContractABI = ""
     
     // Method ID
-    getRegSystemContractMethodID  = "0xa79413e1"
-    getVoteSystemContractMethodID = "0x2083c5f9"
-    getAllProducersInfoMethodID   = "0x1af55073"
+    getRegSystemContractMethodID  = "a79413e1"
+    getVoteSystemContractMethodID = "2083c5f9"
+    getAllProducersInfoMethodID   = "1af55073"
 )
 
 // System contract variables

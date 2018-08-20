@@ -20,6 +20,7 @@ package eth
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"runtime"
 	"sync"
@@ -50,8 +51,6 @@ import (
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/rpc"
 	"github.com/themis-network/go-themis/consensus/dpos"
-	"context"
-	"math"
 )
 
 type LesServer interface {
@@ -134,6 +133,12 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		etherbase:      config.Etherbase,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
+	}
+	
+	// Set dpos call contract
+	if dpos, ok := eth.engine.(*dpos.Dpos); ok {
+		log.Info("set dpos call function")
+		dpos.SetCallFunc(eth.callContract)
 	}
 
 	log.Info("Initialising Ethereum protocol", "versions", ProtocolVersions, "network", config.NetworkId)
@@ -360,8 +365,6 @@ func (s *Ethereum) StartMining(local bool) error {
 			return fmt.Errorf("signer missing: %v", err)
 		}
 		dpos.Authorize(eb, wallet.SignHash)
-		// Set call msg channel
-		dpos.SetCallFunc(s.callContract)
 	}
 	if local {
 		// If local (CPU) mining is started, we can disable the transaction rejection
@@ -445,20 +448,17 @@ func (s *Ethereum) Stop() error {
 
 // TODO update
 func (s *Ethereum) callContract(message core.SystemCall) ([]byte, error) {
-	ctx := context.Background()
 	block := s.blockchain.GetBlockByNumber(message.AtBlock)
+	if block == nil {
+		return nil, errors.New("block not inserted into chain")
+	}
 	statedb, err := s.blockchain.StateAt(block.Root())
 	if err != nil {
 		return nil, err
 	}
 	
-	evm, vmError, err := s.APIBackend.GetEVM(ctx, message, statedb, block.Header(), vm.Config{})
-	if err != nil {
-		return nil, err
-	}
-	if vmError() != nil {
-		return nil, vmError()
-	}
+	context := core.NewEVMContext(message, block.Header(), s.blockchain, nil)
+	evm := vm.NewEVM(context, statedb, s.chainConfig, vm.Config{})
 	
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
 	res, _, failed, err := core.ApplyMessage(evm, message, gp)
