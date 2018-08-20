@@ -315,9 +315,13 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	}
 
 	// Verify pending producer list
-	if header.PendingVersion == parent.PendingVersion && !compareProducers(header.PendingProducers, parent.PendingProducers) {
-		return errInvalidActiveProducerList
+	if header.PendingVersion == parent.PendingVersion && header.ActiveVersion == parent.ActiveVersion && !compareProducers(header.PendingProducers, parent.PendingProducers) {
+		return errInvalidPendingProducerList
 	}
+	if header.PendingVersion == parent.PendingVersion && header.ActiveVersion == parent.ActiveVersion+1 && (header.ProposePendingProducersBlock.Uint64() != 0 || len(header.PendingProducers) != 0){
+		return errInvalidPendingProducerList
+	}
+	
 	// Call system contract to check proposed pending producer
 	if header.PendingVersion == parent.PendingVersion+1 {
 		// Valid propose pending block
@@ -343,29 +347,16 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	}
 	// Check active producers list
 	if header.ActiveVersion == parent.ActiveVersion+1 {
-		temp := chain.GetHeaderByNumber(parent.ProposePendingProducersBlock.Uint64())
-		// Try to get header from parents(may not be inserted into chain)
-		if temp == nil {
-			for h := len(parents); h >= 0; h-- {
-				if parent.ProposePendingProducersBlock.Uint64() == parents[h].Number.Uint64() {
-					temp = parents[h]
-				}
-			}
-		}
-		if temp == nil {
-			return errMissPendingProducersBlock
-		}
-
 		// Check parent.dpos-parent.ProposePendingProducersBlock == 0
-		if header.ProposePendingProducersBlock.Cmp(header.DposIBM) != 0 {
+		if parent.ProposePendingProducersBlock.Cmp(parent.DposIBM) != 0 {
 			return errInvalidActiveProducerList
 		}
 
-		if !compareProducers(header.ActiveProducers, temp.PendingProducers) {
+		if !compareProducers(header.ActiveProducers, parent.PendingProducers) {
 			return errInvalidActiveProducerList
 		}
 	}
-	if header.ActiveVersion < parent.ActiveVersion || header.ActiveVersion >= parent.ActiveVersion+1 {
+	if header.ActiveVersion < parent.ActiveVersion || header.ActiveVersion > parent.ActiveVersion+1 {
 		return errInvalidActiveProducersVersion
 	}
 
@@ -385,6 +376,9 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		}
 		if iheader == nil {
 			continue
+		}
+		if iheader.ActiveVersion != parent.ActiveVersion {
+			break
 		}
 
 		if proposedList.find(iheader.Coinbase[:]) {
@@ -544,9 +538,15 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	header.ActiveVersion = lastHeader.ActiveVersion
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
-	if lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 && lastHeader.ProposePendingProducersBlock.Uint64() != 0 {
-		header.ActiveProducers = chain.GetHeaderByNumber(lastHeader.ProposePendingProducersBlock.Uint64()).PendingProducers
+	if lastHeader.ProposePendingProducersBlock.Uint64() != 0 && lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
+		log.Info("active new producers", "number", header.Number.Uint64(), "producers", lastHeader.PendingProducers)
+		header.ActiveProducers = make([]common.Address, len(lastHeader.PendingProducers))
+		copy(header.ActiveProducers, lastHeader.PendingProducers)
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
+		
+		// Set pending info to zero
+		header.ProposePendingProducersBlock = new(big.Int).SetUint64(0)
+		header.PendingProducers = []common.Address{}
 	}
 
 	producerSize := len(lastHeader.ActiveProducers)
@@ -584,12 +584,17 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	pendingVersionNotUpdated := lastEpochBlockNewest != nil && (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1
 	if header.Number.Uint64()%epochLength == 0 || pendingVersionNotUpdated {
 		topProducers, err := d.getPendingProducers(lastHeader)
-		if err == nil {
-			header.PendingProducers = make([]common.Address, len(topProducers))
-			copy(header.PendingProducers, topProducers)
-			header.PendingVersion = lastHeader.PendingVersion + 1
-			header.ProposePendingProducersBlock.Set(header.Number)
+		if err != nil {
+		    log.Warn("dpos get pendingProducers failed", "number", header.Number.Uint64(), "error", err)
+		    return nil
 		}
+		
+		header.PendingProducers = make([]common.Address, len(topProducers))
+		copy(header.PendingProducers, topProducers)
+		header.PendingVersion = lastHeader.PendingVersion + 1
+		header.ProposePendingProducersBlock.Set(header.Number)
+		
+		log.Info("dpos propose new producers", "number", header.Number.Uint64(), "producers", topProducers)
 	}
 
 	return nil
