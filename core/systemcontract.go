@@ -71,10 +71,10 @@ var (
     OutTimeStorageValue = common.HexToHash("0x00000000000000000000000000000000000000000000000000000007915e5b80")
     
     LeastDepositForVoteStorageIndex = common.BytesToHash([]byte{1})
-    LeastDepositForVoteStorageValue = common.HexToHash("0x000000000000000000000000000000000000000000000000000000000003f480")
+    LeastDepositForVoteStorageValue = common.HexToHash("0x0000000000000000000000000000000000000000000000000de0b6b3a7640000")
     
     LockTimeForVoteStorageIndex = common.BytesToHash([]byte{2})
-    LockTimeForVoteStorageValue = common.HexToHash("0x0000000000000000000000000000000000000000000000000de0b6b3a7640000")
+    LockTimeForVoteStorageValue = common.HexToHash("0x000000000000000000000000000000000000000000000000000000000003f480")
     
     MainContractStorageIndex = common.BytesToHash([]byte{3})
     MainContractStorageValue = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000009")
