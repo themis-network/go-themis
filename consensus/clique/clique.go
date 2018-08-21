@@ -721,6 +721,10 @@ func (c *Clique) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
+func (c *Clique) VerifyPendingProducers(chain consensus.ChainReader, header *types.Header) error {
+	return nil
+}
+
 // AccumulateRewards credits the coinbase of the given block with the mining
 // reward. The total reward consists of the static block reward.
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, signer common.Address) {

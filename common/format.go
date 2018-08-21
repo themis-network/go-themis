@@ -38,3 +38,13 @@ func (d PrettyDuration) String() string {
 	}
 	return label
 }
+
+func PrettyAddresses(addresses []Address) string {
+	result := ""
+	for _, v := range addresses {
+		result += v.Hex() + ","
+	}
+	result = strings.TrimSuffix(result, ",")
+
+	return result
+}

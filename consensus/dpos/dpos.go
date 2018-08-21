@@ -324,15 +324,11 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	
 	// Call system contract to check proposed pending producer
 	if header.PendingVersion == parent.PendingVersion+1 {
-		// Valid propose pending block
-		lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
-		lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
+		// Valid propose pending block except pending producers, which will be validated in body
+		lastEpochNumNewest := number/epochLength*epochLength - 1
+		lastEpochBlockNewest := getHeader(chain, parents, number, lastEpochNumNewest)
 		if lastEpochBlockNewest == nil || parent.PendingVersion-lastEpochBlockNewest.PendingVersion != 0 {
 			return errInvalidPendingProducerBlock
-		}
-		newProducers, err := d.getPendingProducers(parent)
-		if err != nil || !compareProducers(header.PendingProducers, newProducers) {
-			return errInvalidPendingProducerList
 		}
 	}
 	// header.pendingVersion can not bigger than parent.PendingVersion+1 or smaller than parent.PendingVersion
@@ -366,18 +362,10 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	proposedList := set{0, make([]list, producerSize)}
 	i := parent.Number.Uint64()
 	for ; i != parent.ProposedIBM.Uint64(); i-- {
-		iheader := chain.GetHeaderByNumber(i)
-		if iheader == nil {
-			for h := len(parents) - 1; h >= 0; h-- {
-				if i == parents[h].Number.Uint64() {
-					iheader = parents[h]
-				}
-			}
-		}
-		if iheader == nil {
-			continue
-		}
-		if iheader.ActiveVersion != parent.ActiveVersion {
+		iheader := getHeader(chain, parents, number, i)
+		// Break if can not get header before current block
+		// IBM should be same with parent is active version changes
+		if iheader == nil || iheader.ActiveVersion != parent.ActiveVersion {
 			break
 		}
 
@@ -397,13 +385,30 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	}
 	// Header.dposIBM and header.proposedIBM should be the latest confirmed block related.
 	if proposed {
-		proposedBlock := chain.GetHeaderByNumber(i)
+		proposedBlock := getHeader(chain, parents, number, i)
 		if proposedBlock == nil || proposedBlock.ProposedIBM.Cmp(header.DposIBM) != 0 || header.ProposedIBM.Uint64()-i != 0 {
 			return errInvalidIBM
 		}
 	}
 
 	return d.verifySeal(chain, header, parents)
+}
+
+// VerifyPendingProducer check pending producers after parent block state have been written
+// cause it have to call evm to get producers
+func (d *Dpos) VerifyPendingProducers(chain consensus.ChainReader, header *types.Header) error {
+	parent := chain.GetHeaderByNumber(header.Number.Uint64() - 1)
+	if header.PendingVersion != parent.PendingVersion+1 {
+	    return nil
+	}
+	
+	newProducers, err := d.getPendingProducers(parent)
+	if err != nil || !compareProducers(header.PendingProducers, newProducers) {
+		log.Warn("invalidPendingProducerList", "error", err)
+		return errInvalidPendingProducerList
+	}
+	
+	return nil
 }
 
 // VerifyUncles implements consensus.Engine, always returning an error for any
@@ -539,7 +544,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 
 	// Try to propose a new active producers scheme when pending producers'block become IBM
 	if lastHeader.ProposePendingProducersBlock.Uint64() != 0 && lastHeader.ProposePendingProducersBlock.Cmp(lastHeader.DposIBM) == 0 {
-		log.Info("active new producers", "number", header.Number.Uint64(), "producers", lastHeader.PendingProducers)
+		log.Info("active new producers", "number", header.Number.Uint64(), "producers", common.PrettyAddresses(lastHeader.PendingProducers))
 		header.ActiveProducers = make([]common.Address, len(lastHeader.PendingProducers))
 		copy(header.ActiveProducers, lastHeader.PendingProducers)
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
@@ -593,8 +598,6 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		copy(header.PendingProducers, topProducers)
 		header.PendingVersion = lastHeader.PendingVersion + 1
 		header.ProposePendingProducersBlock.Set(header.Number)
-		
-		log.Info("dpos propose new producers", "number", header.Number.Uint64(), "producers", topProducers)
 	}
 
 	return nil
@@ -804,4 +807,15 @@ func compareProducers(src []common.Address, dst []common.Address) bool {
 		}
 	}
 	return true
+}
+
+// getHeader try to get header from parents, then try to get from chain
+func getHeader(chain consensus.ChainReader, parents []*types.Header, currentNumber, number uint64) *types.Header {
+	parentsSize := uint64(len(parents))
+	distance := currentNumber - number
+	if parentsSize >= distance {
+		return parents[parentsSize-distance]
+	}
+	
+	return chain.GetHeaderByNumber(number)
 }
