@@ -234,7 +234,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	
 	// Setup dpos consensus system contract
 	if g.Config != nil && g.Config.Dpos != nil {
-		for _, contract := range HardcodedContractsDpos {
+		for _, contract := range NewHardcodedContractsDpos(g.Config.Dpos) {
 			statedb.SetCode(contract.GetContractAddr(), hexutil.MustDecode(contract.GetCode()))
 			for key, value := range contract.GetStorage() {
 				statedb.SetState(contract.GetContractAddr(), key, value)
@@ -270,10 +270,10 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if g.Config != nil && g.Config.Dpos != nil && g.Config.Dpos.Producers != nil {
 		producers := make([]common.Address, 0)
 		for _, producer := range g.Config.Dpos.Producers {
-			if producer.Address == common.BytesToAddress([]byte{0}) {
+			if producer == common.BytesToAddress([]byte{0}) {
 				continue
 			}
-			producers = append(producers, producer.Address)
+			producers = append(producers, producer)
 		}
 		head.ActiveProducers = producers
 	}

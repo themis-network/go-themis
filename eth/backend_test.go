@@ -13,6 +13,7 @@ import (
 	"github.com/themis-network/go-themis/crypto"
 	"github.com/themis-network/go-themis/ethdb"
 	"github.com/themis-network/go-themis/params"
+	"math/big"
 )
 
 type TestData struct {
@@ -50,31 +51,38 @@ func TestSystemContract(t *testing.T) {
 
 	test := []TestData{
 		{
+			"proposalWaitTime",
+			"proposalWaitTime()",
+			[]byte{},
+			common.BigToHash(new(big.Int).SetUint64(params.ProposalPeriod)).Bytes(),
+			core.MainSystemContractAddr,
+		},
+		{
 			"depositForJoin",
 			"depositForJoin()",
 			[]byte{},
-			core.DepositForJoinStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.DepositForProducer)).Bytes(),
 			core.RegSystemContractAddr,
 		},
 		{
 			"lockTimeForDeposit",
 			"lockTimeForDeposit()",
 			[]byte{},
-			core.LockTimeForDepositStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.LockTimeForDeposit)).Bytes(),
 			core.RegSystemContractAddr,
 		},
 		{
 			"lengthOFEpoch",
 			"lengthOFEpoch()",
 			[]byte{},
-			core.LengthOFEpochStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.ProducerSize)).Bytes(),
 			core.RegSystemContractAddr,
 		},
 		{
 			"initOutTime",
 			"initOutTime()",
 			[]byte{},
-			core.InitOutTimeStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.InitOutTime)).Bytes(),
 			core.RegSystemContractAddr,
 		},
 		{
@@ -95,21 +103,21 @@ func TestSystemContract(t *testing.T) {
 			"initOutTime",
 			"initOutTime()",
 			[]byte{},
-			core.OutTimeStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.InitOutTime)).Bytes(),
 			core.VoteSystemContractAddr,
 		},
 		{
 			"leastDepositForVote",
 			"leastDepositForVote()",
 			[]byte{},
-			core.LeastDepositForVoteStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.StakeForVote)).Bytes(),
 			core.VoteSystemContractAddr,
 		},
 		{
 			"lockTimeForVote",
 			"lockTimeForVote()",
 			[]byte{},
-			core.LockTimeForVoteStorageValue.Bytes(),
+			common.BigToHash(new(big.Int).SetUint64(params.LockTimeForStake)).Bytes(),
 			core.VoteSystemContractAddr,
 		},
 		{

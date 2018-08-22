@@ -58,13 +58,13 @@ var (
 
 	// ThemisTestChainConfig contains the chain parameters to run a node on the Themis test network.
 	ThemisTestChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(20180630),
-		HomesteadBlock:      big.NewInt(1),
-		EIP150Block:         big.NewInt(2),
-		EIP150Hash:          common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
-		EIP155Block:         big.NewInt(3),
-		EIP158Block:         big.NewInt(3),
-		ByzantiumBlock:      big.NewInt(4),
+		ChainID:        big.NewInt(20180630),
+		HomesteadBlock: big.NewInt(1),
+		EIP150Block:    big.NewInt(2),
+		EIP150Hash:     common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000"),
+		EIP155Block:    big.NewInt(3),
+		EIP158Block:    big.NewInt(3),
+		ByzantiumBlock: big.NewInt(4),
 		Clique: &CliqueConfig{
 			Period: 10,
 			Epoch:  30000,
@@ -128,14 +128,18 @@ func (c *EthashConfig) String() string {
 
 // DposConfig is the consensus engine configs for delegated-proof-of-stake based sealing.
 type DposConfig struct {
-	Producers []Producer `json:"producers"`
-}
+	// Consensus config
+	Producers   []common.Address `json:"producers"`   // Producers used in first epoch.
+	BlockPeriod uint64           `json:"blockPeriod"` // Minimum difference between two consecutive block's timestamps.
+	Epoch       uint64           `json:"epoch"`       // Default blocks after which try to propose a new pending producers scheme.
 
-// Producer info
-type Producer struct {
-	Address common.Address `json:"address"`
-	Deposit uint64 `json:"deposit"`
-	VotedWeight uint64 `json:"votedWeight"`
+	// Contract config
+	ProducerSize       uint64 `json:"producerSize"`       // Size of producers will be used in consensus.
+	ProposalPeriod     uint64 `json:"proposalPeriod"`     // Seconds of proposal protected, after which can proposal a new one.
+	DepositForProducer uint64 `json:"depositForProducer"` // Least deposit should be locked by contract if one want to be a producer.
+	StakeForVote       uint64 `json:"stakeForVote"`       // Least stake should be locked by contract if one want to vote.
+	LockTimeForDeposit uint64 `json:"lockTimeForDeposit"` // Times of deposit will be locked after producer unreg.
+	LockTimeForStake   uint64 `json:"lockTimeForStake"`   // Times of stake will be locked after user unvote.
 }
 
 // String implements the stringer interface, returning the consensus engine details.
