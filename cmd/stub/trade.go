@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/temp/go-ethereum"
+	ethereum "github.com/themis-network/go-themis"
 	"github.com/themis-network/go-themis/accounts/abi"
 	"github.com/themis-network/go-themis/accounts/abi/bind"
 	"github.com/themis-network/go-themis/common"
