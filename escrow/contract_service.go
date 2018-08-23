@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ContractAddr  = "368790bd905Adf4962e36BDec79EEF7dB7F0BEA3" //trade contract address
+	ContractAddr  = "86740c477747251757a42070f591da9b4a2bf412" //trade contract address
 	testRawurl = "ws://192.168.1.213:8546"
 	judgeTopic = "0x15c344b2775b6729564ceb0bd0971860f1f1d150ba24d1e4791336e3de69a186"
 	uploadSecretTopic = "0x8a59d01dda427123e224b10a5103435e6a94ce386bd3d81052074263f9defce8"
@@ -122,21 +122,6 @@ func (t *EscrowNode)processLog(eventLog types.Log){
 		orderId.SetBytes(orderIdBytes)
 
 		logger.Println("Process Log, event uploadSecretTopic, orderId:{}", orderId)
-
-		status, err := t.contractClient.traderCaller.GetOrderStatus(t.getCallOpts(), orderId)
-		logger.Println("order status", status)
-		if err != nil{
-			logger.Println("failed to get order status")
-			return
-		}
-
-		if status == SecretUploaded {
-			vb, vs, err := t.verify(orderId)
-			if err != nil {
-				logger.Println("verify error")
-			}
-			t.sendVerifyResults(orderId, vb, vs)
-		}
 	}else {
 		logger.Println("Process Log, event unknow")
 	}
@@ -168,26 +153,6 @@ func (t *EscrowNode)verify(orderId *big.Int) (bool, bool, error){
 	}else{
 		return vb, vs, nil
 	}
-}
-
-func (t *EscrowNode)sendVerifyResults(orderId *big.Int, vb bool, vs bool){
-
-	nonce, _ := t.contractClient.rawClient.PendingNonceAt(context.Background(), t.escrowAddr)
-	gasPrice, _ := t.contractClient.rawClient.SuggestGasPrice(context.Background())
-
-	logger.Println(nonce, gasPrice, )
-
-	auth := bind.NewKeyedTransactor(t.privKey.PrivateKey)
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)     // in wei
-	auth.GasLimit = uint64(500000) // in units
-	auth.GasPrice = gasPrice
-
-	tx, err:= t.contractClient.traderTransactor.SendVerifyResult(auth, orderId, vb, vs)
-	if err!= nil {
-		logger.Println(err)
-	}
-	logger.Println("sendVerifyResults", orderId, tx.Hash().Hex())
 }
 
 

@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"strings"
 
-	ethereum "github.com/themis-network/go-themis"
+	ethereum "github.com/temp/go-ethereum"
 	"github.com/themis-network/go-themis/accounts/abi"
 	"github.com/themis-network/go-themis/accounts/abi/bind"
 	"github.com/themis-network/go-themis/common"
@@ -15,10 +15,8 @@ import (
 	"github.com/themis-network/go-themis/event"
 )
 
-
-
 // TradeABI is the input ABI used to generate the binding from.
-const TradeABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"addArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"address\"}],\"name\":\"isOrderTrustee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"secrets\",\"type\":\"string\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"verifyData\",\"type\":\"string\"}],\"name\":\"uploadSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getRequester\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderTrustees\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderBuyer\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"finishOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"buyerResult\",\"type\":\"bool\"},{\"name\":\"sellerResult\",\"type\":\"bool\"}],\"name\":\"sendVerifyResult\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getVerifyData\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"}],\"name\":\"confirmTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"removeArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"winner\",\"type\":\"uint32\"}],\"name\":\"judge\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"isArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getWinner\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trustee\",\"type\":\"address\"}],\"name\":\"updateTrusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"createUserID\",\"type\":\"uint32\"}],\"name\":\"cancelTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderSeller\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trusteeNumber\",\"type\":\"uint8\"}],\"name\":\"updateDefaultTrusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderStatus\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"withdrawFee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getPerFeeOfOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"arbitrate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"trusteeID\",\"type\":\"address\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"userType\",\"type\":\"uint8\"}],\"name\":\"createNewTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"userType\",\"type\":\"uint8\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogCreateOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"creator\",\"type\":\"address\"}],\"name\":\"LogCancelTrade\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"trustees\",\"type\":\"address[]\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogConfirmTradeOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"secrets\",\"type\":\"string\"}],\"name\":\"LogUploadSecret\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"buyerResult\",\"type\":\"bool\"},{\"indexed\":false,\"name\":\"sellerResult\",\"type\":\"bool\"}],\"name\":\"LogVerifyResult\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"LogFinishOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LogWithdrawFee\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"Arbitrate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"winner\",\"type\":\"uint32\"},{\"indexed\":true,\"name\":\"judge\",\"type\":\"address\"}],\"name\":\"Judge\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"AddArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"RemoveArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"newNumber\",\"type\":\"uint256\"}],\"name\":\"LogUpdateDefaultTrusteeNumber\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"newAddress\",\"type\":\"address\"}],\"name\":\"LogUpdateTrusteeContract\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}],\"name\":\"OwnershipRenounced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
+const TradeABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"addArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"address\"}],\"name\":\"isOrderTrustee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"secrets\",\"type\":\"string\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"verifyData\",\"type\":\"string\"}],\"name\":\"uploadSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getRequester\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderTrustees\",\"outputs\":[{\"name\":\"\",\"type\":\"address[]\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderBuyer\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"finishOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getVerifyData\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"}],\"name\":\"confirmTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"removeArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"winner\",\"type\":\"uint32\"}],\"name\":\"judge\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"name\":\"isArbitrator\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getWinner\",\"outputs\":[{\"name\":\"\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trustee\",\"type\":\"address\"}],\"name\":\"updateTrusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"trusteeContract\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"createUserID\",\"type\":\"uint32\"}],\"name\":\"cancelTrade\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderSeller\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_trusteeNumber\",\"type\":\"uint8\"}],\"name\":\"updateDefaultTrusteeNumber\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getOrderStatus\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"withdrawFee\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"getPerFeeOfOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"arbitrate\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"trusteeID\",\"type\":\"address\"},{\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"getSecret\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"orderID\",\"type\":\"uint80\"},{\"name\":\"userID\",\"type\":\"uint32\"},{\"name\":\"userType\",\"type\":\"uint8\"}],\"name\":\"createNewTradeOrder\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"userType\",\"type\":\"uint8\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogCreateOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"creator\",\"type\":\"address\"}],\"name\":\"LogCancelTrade\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"trustees\",\"type\":\"address[]\"},{\"indexed\":false,\"name\":\"feePayed\",\"type\":\"uint256\"}],\"name\":\"LogConfirmTradeOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"},{\"indexed\":false,\"name\":\"secrets\",\"type\":\"string\"}],\"name\":\"LogUploadSecret\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"orderID\",\"type\":\"uint80\"}],\"name\":\"LogFinishOrder\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"trustee\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LogWithdrawFee\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Pause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"Unpause\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"user\",\"type\":\"uint32\"}],\"name\":\"Arbitrate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"orderID\",\"type\":\"uint80\"},{\"indexed\":true,\"name\":\"winner\",\"type\":\"uint32\"},{\"indexed\":true,\"name\":\"judge\",\"type\":\"address\"}],\"name\":\"Judge\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"AddArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"who\",\"type\":\"address\"}],\"name\":\"RemoveArbitrator\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"newNumber\",\"type\":\"uint256\"}],\"name\":\"LogUpdateDefaultTrusteeNumber\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"newAddress\",\"type\":\"address\"}],\"name\":\"LogUpdateTrusteeContract\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"}],\"name\":\"OwnershipRenounced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"}]"
 
 // Trade is an auto generated Go binding around an Ethereum contract.
 type Trade struct {
@@ -760,27 +758,6 @@ func (_Trade *TradeSession) RenounceOwnership() (*types.Transaction, error) {
 // Solidity: function renounceOwnership() returns()
 func (_Trade *TradeTransactorSession) RenounceOwnership() (*types.Transaction, error) {
 	return _Trade.Contract.RenounceOwnership(&_Trade.TransactOpts)
-}
-
-// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
-//
-// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
-func (_Trade *TradeTransactor) SendVerifyResult(opts *bind.TransactOpts, orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
-	return _Trade.contract.Transact(opts, "sendVerifyResult", orderID, buyerResult, sellerResult)
-}
-
-// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
-//
-// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
-func (_Trade *TradeSession) SendVerifyResult(orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
-	return _Trade.Contract.SendVerifyResult(&_Trade.TransactOpts, orderID, buyerResult, sellerResult)
-}
-
-// SendVerifyResult is a paid mutator transaction binding the contract method 0x2dd5c746.
-//
-// Solidity: function sendVerifyResult(orderID uint80, buyerResult bool, sellerResult bool) returns(bool)
-func (_Trade *TradeTransactorSession) SendVerifyResult(orderID *big.Int, buyerResult bool, sellerResult bool) (*types.Transaction, error) {
-	return _Trade.Contract.SendVerifyResult(&_Trade.TransactOpts, orderID, buyerResult, sellerResult)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
@@ -2271,140 +2248,6 @@ func (_Trade *TradeFilterer) WatchLogUploadSecret(opts *bind.WatchOpts, sink cha
 	}), nil
 }
 
-// TradeLogVerifyResultIterator is returned from FilterLogVerifyResult and is used to iterate over the raw logs and unpacked data for LogVerifyResult events raised by the Trade contract.
-type TradeLogVerifyResultIterator struct {
-	Event *TradeLogVerifyResult // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *TradeLogVerifyResultIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(TradeLogVerifyResult)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(TradeLogVerifyResult)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *TradeLogVerifyResultIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *TradeLogVerifyResultIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// TradeLogVerifyResult represents a LogVerifyResult event raised by the Trade contract.
-type TradeLogVerifyResult struct {
-	Trustee      common.Address
-	BuyerResult  bool
-	SellerResult bool
-	Raw          types.Log // Blockchain specific contextual infos
-}
-
-// FilterLogVerifyResult is a free log retrieval operation binding the contract event 0x0727453506ca45d3abe727861f7ec4de1b2032eec141005f8bb63e31024bc132.
-//
-// Solidity: e LogVerifyResult(trustee indexed address, buyerResult bool, sellerResult bool)
-func (_Trade *TradeFilterer) FilterLogVerifyResult(opts *bind.FilterOpts, trustee []common.Address) (*TradeLogVerifyResultIterator, error) {
-
-	var trusteeRule []interface{}
-	for _, trusteeItem := range trustee {
-		trusteeRule = append(trusteeRule, trusteeItem)
-	}
-
-	logs, sub, err := _Trade.contract.FilterLogs(opts, "LogVerifyResult", trusteeRule)
-	if err != nil {
-		return nil, err
-	}
-	return &TradeLogVerifyResultIterator{contract: _Trade.contract, event: "LogVerifyResult", logs: logs, sub: sub}, nil
-}
-
-// WatchLogVerifyResult is a free log subscription operation binding the contract event 0x0727453506ca45d3abe727861f7ec4de1b2032eec141005f8bb63e31024bc132.
-//
-// Solidity: e LogVerifyResult(trustee indexed address, buyerResult bool, sellerResult bool)
-func (_Trade *TradeFilterer) WatchLogVerifyResult(opts *bind.WatchOpts, sink chan<- *TradeLogVerifyResult, trustee []common.Address) (event.Subscription, error) {
-
-	var trusteeRule []interface{}
-	for _, trusteeItem := range trustee {
-		trusteeRule = append(trusteeRule, trusteeItem)
-	}
-
-	logs, sub, err := _Trade.contract.WatchLogs(opts, "LogVerifyResult", trusteeRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(TradeLogVerifyResult)
-				if err := _Trade.contract.UnpackLog(event, "LogVerifyResult", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
 // TradeLogWithdrawFeeIterator is returned from FilterLogWithdrawFee and is used to iterate over the raw logs and unpacked data for LogWithdrawFee events raised by the Trade contract.
 type TradeLogWithdrawFeeIterator struct {
 	Event *TradeLogWithdrawFee // Event containing the contract specifics and raw log
@@ -3184,4 +3027,3 @@ func (_Trade *TradeFilterer) WatchUnpause(opts *bind.WatchOpts, sink chan<- *Tra
 		}
 	}), nil
 }
-
