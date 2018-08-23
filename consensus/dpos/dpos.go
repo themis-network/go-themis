@@ -206,6 +206,14 @@ type Dpos struct {
 func New(config *params.DposConfig) *Dpos {
 	// Copy config
 	conf := *config
+	// Set default config when not set
+	if conf.BlockPeriod == 0 {
+		conf.BlockPeriod = blockPeriod
+	}
+	if conf.Epoch == 0 {
+		conf.Epoch = epochLength
+	}
+	// Allocate caches and create the engine
 	signatures, _ := lru.NewARC(inmemorySignatures)
 
 	return &Dpos{
@@ -318,14 +326,14 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	if header.PendingVersion == parent.PendingVersion && header.ActiveVersion == parent.ActiveVersion && !compareProducers(header.PendingProducers, parent.PendingProducers) {
 		return errInvalidPendingProducerList
 	}
-	if header.PendingVersion == parent.PendingVersion && header.ActiveVersion == parent.ActiveVersion+1 && (header.ProposePendingProducersBlock.Uint64() != 0 || len(header.PendingProducers) != 0){
+	if header.PendingVersion == parent.PendingVersion && header.ActiveVersion == parent.ActiveVersion+1 && (header.ProposePendingProducersBlock.Uint64() != 0 || len(header.PendingProducers) != 0) {
 		return errInvalidPendingProducerList
 	}
-	
+
 	// Call system contract to check proposed pending producer
 	if header.PendingVersion == parent.PendingVersion+1 {
 		// Valid propose pending block except pending producers, which will be validated in body
-		lastEpochNumNewest := number/epochLength*epochLength - 1
+		lastEpochNumNewest := number/d.config.Epoch*d.config.Epoch - 1
 		lastEpochBlockNewest := getHeader(chain, parents, number, lastEpochNumNewest)
 		if lastEpochBlockNewest == nil || parent.PendingVersion-lastEpochBlockNewest.PendingVersion != 0 {
 			return errInvalidPendingProducerBlock
@@ -399,15 +407,15 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 func (d *Dpos) VerifyPendingProducers(chain consensus.ChainReader, header *types.Header) error {
 	parent := chain.GetHeaderByNumber(header.Number.Uint64() - 1)
 	if header.PendingVersion != parent.PendingVersion+1 {
-	    return nil
+		return nil
 	}
-	
+
 	newProducers, err := d.getPendingProducers(parent)
 	if err != nil || !compareProducers(header.PendingProducers, newProducers) {
 		log.Warn("invalidPendingProducerList", "error", err)
 		return errInvalidPendingProducerList
 	}
-	
+
 	return nil
 }
 
@@ -453,7 +461,7 @@ func (d *Dpos) verifySeal(chain consensus.ChainReader, header *types.Header, par
 		grand = chain.GetHeader(parent.ParentHash, parent.Number.Uint64()-1)
 	}
 	// Ensure signer signs at his time; Also check authority of signer
-	if err := verifyBlockTime(grand, parent, header); err != nil {
+	if err := d.verifyBlockTime(grand, parent, header); err != nil {
 		return err
 	}
 
@@ -472,7 +480,7 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 	lastHeader := chain.CurrentHeader()
 
 	// Get next block time, will return err is header.coinBase is unauthorized.
-	myBlockTime, err := getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
 	if err != nil {
 		return nil, err
 	}
@@ -548,7 +556,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		header.ActiveProducers = make([]common.Address, len(lastHeader.PendingProducers))
 		copy(header.ActiveProducers, lastHeader.PendingProducers)
 		header.ActiveVersion = lastHeader.ActiveVersion + 1
-		
+
 		// Set pending info to zero
 		header.ProposePendingProducersBlock = new(big.Int).SetUint64(0)
 		header.PendingProducers = []common.Address{}
@@ -583,17 +591,18 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
 
 	// The Newest block header of last epoch
-	lastEpochNumNewest := header.Number.Uint64()/epochLength*epochLength - 1
+	lastEpochNumNewest := header.Number.Uint64()/d.config.Epoch*d.config.Epoch - 1
 	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
 	// Try to propose a new pending producers scheme when epoch start or pending version not update on the first block of current epoch
+	// TODO will limit block number to try to propose new pending producers like producer size or something
 	pendingVersionNotUpdated := lastEpochBlockNewest != nil && (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1
-	if header.Number.Uint64()%epochLength == 0 || pendingVersionNotUpdated {
+	if header.Number.Uint64()%d.config.Epoch == 0 || pendingVersionNotUpdated {
 		topProducers, err := d.getPendingProducers(lastHeader)
 		if err != nil {
-		    log.Warn("dpos get pendingProducers failed", "number", header.Number.Uint64(), "error", err)
-		    return nil
+			log.Warn("dpos get pendingProducers failed", "number", header.Number.Uint64(), "error", err)
+			return nil
 		}
-		
+
 		header.PendingProducers = make([]common.Address, len(topProducers))
 		copy(header.PendingProducers, topProducers)
 		header.PendingVersion = lastHeader.PendingVersion + 1
@@ -677,22 +686,22 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
-func getNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
-	blockTime, err := calculateNextBlockTime(grandParent, parent, signer)
+func (d *Dpos) getNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
+	blockTime, err := d.calculateNextBlockTime(grandParent, parent, signer)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// Get block time smaller than local time, add blockPeriod * producerSize to reach localTime
 	if blockTime < uint64(time.Now().Unix()) {
-		blockTime = reachAfterLocalTime(blockTime, uint64(time.Now().Unix()), len(parent.ActiveProducers))
+		blockTime = d.reachAfterLocalTime(blockTime, uint64(time.Now().Unix()), len(parent.ActiveProducers))
 	}
-	
+
 	return blockTime, nil
 }
 
 // calculateNextBlockTime returns next block time
-func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
+func (d *Dpos) calculateNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, signer)
 	if err != nil {
@@ -707,7 +716,7 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 		// This block is the first block applying new active producers and will start a new epoch
 		// NextBlockTime = parent.time + blockPeriod * (index + 1)
 		waitBlock := currentSignerIndex + 1
-		waitBlockTime := uint64(waitBlock) * blockPeriod
+		waitBlockTime := uint64(waitBlock) * d.config.BlockPeriod
 
 		return parent.Time.Uint64() + waitBlockTime, nil
 	}
@@ -724,13 +733,13 @@ func calculateNextBlockTime(grandParent *types.Header, parent *types.Header, sig
 		waitBlock += int64(len(parent.ActiveProducers))
 	}
 
-	waitBlockTime := uint64(waitBlock) * blockPeriod
+	waitBlockTime := uint64(waitBlock) * d.config.BlockPeriod
 
 	return parent.Time.Uint64() + waitBlockTime, nil
 }
 
 // verifyBlockTime
-func verifyBlockTime(grandParent *types.Header, parent *types.Header, header *types.Header) error {
+func (d *Dpos) verifyBlockTime(grandParent *types.Header, parent *types.Header, header *types.Header) error {
 	// Assume grandParent and parent have been verified.
 	currentSignerIndex, err := getSignerIndex(parent, header.Coinbase)
 	if err != nil {
@@ -740,41 +749,41 @@ func verifyBlockTime(grandParent *types.Header, parent *types.Header, header *ty
 	if grandParent == nil && parent.Number.Uint64() > 0 {
 		return errInvalidGrandParent
 	}
-	
+
 	producerSize := uint64(len(parent.ActiveProducers))
 
 	// Verify first block of a new active producer version sealed specially
 	if parent.Number.Uint64() == 0 || grandParent.ActiveVersion != parent.ActiveVersion {
 		waitBlock := currentSignerIndex + 1
-		waitBlockTime := uint64(waitBlock) * blockPeriod
-		if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*blockPeriod) != 0 {
+		waitBlockTime := uint64(waitBlock) * d.config.BlockPeriod
+		if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*d.config.BlockPeriod) != 0 {
 			return errInvalidBlockTime
 		}
 		return nil
 	}
-	
+
 	// Calculate block time based on same producer version
 	parentSignerIndex, err := getSignerIndex(grandParent, parent.Coinbase)
 	if err != nil {
 		return err
 	}
-	
+
 	waitBlock := currentSignerIndex - parentSignerIndex
 	// At the next block epoch
 	if waitBlock <= 0 {
 		waitBlock += int64(len(parent.ActiveProducers))
 	}
-	waitBlockTime := uint64(waitBlock) * blockPeriod
-	if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*blockPeriod) != 0 {
+	waitBlockTime := uint64(waitBlock) * d.config.BlockPeriod
+	if (header.Time.Uint64()-waitBlockTime-parent.Time.Uint64())%(producerSize*d.config.BlockPeriod) != 0 {
 		return errInvalidBlockTime
 	}
 
 	return nil
 }
 
-func reachAfterLocalTime(originalBlockTime, localTime uint64, producerSize int) uint64 {
-	distance := (localTime - originalBlockTime) / blockPeriod / uint64(producerSize) + 1
-	return distance * blockPeriod * uint64(producerSize) + originalBlockTime
+func (d *Dpos) reachAfterLocalTime(originalBlockTime, localTime uint64, producerSize int) uint64 {
+	distance := (localTime-originalBlockTime)/d.config.BlockPeriod/uint64(producerSize) + 1
+	return distance*d.config.BlockPeriod*uint64(producerSize) + originalBlockTime
 }
 
 // getSignerIndex returns index of signer in header.activeProducers, otherwise an error
@@ -816,6 +825,6 @@ func getHeader(chain consensus.ChainReader, parents []*types.Header, currentNumb
 	if parentsSize >= distance {
 		return parents[parentsSize-distance]
 	}
-	
+
 	return chain.GetHeaderByNumber(number)
 }
