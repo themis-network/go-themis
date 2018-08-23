@@ -2,8 +2,9 @@ package eth
 
 import (
 	"bytes"
-    "math"
-    "testing"
+        "math"
+        "math/big"
+        "testing"
     
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus/dpos"
@@ -13,7 +14,6 @@ import (
 	"github.com/themis-network/go-themis/crypto"
 	"github.com/themis-network/go-themis/ethdb"
 	"github.com/themis-network/go-themis/params"
-	"math/big"
 )
 
 type TestData struct {
