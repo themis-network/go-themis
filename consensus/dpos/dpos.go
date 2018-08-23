@@ -477,16 +477,6 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 		return nil, errUnknownBlock
 	}
 
-	lastHeader := chain.CurrentHeader()
-
-	// Get next block time, will return err is header.coinBase is unauthorized.
-	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
-	if err != nil {
-		return nil, err
-	}
-	// Set block time
-	header.Time.SetUint64(myBlockTime)
-
 	// Don't hold the signer fields for the entire sealing procedure
 	d.lock.RLock()
 	signer, signFn := d.signer, d.signFn
@@ -537,6 +527,15 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 
 	// Set nonce
 	copy(header.Nonce[:], nonce[:])
+	
+	// Get next block time, will return err is header.coinBase is unauthorized.
+	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
+	if err != nil {
+		// Since every node will start this operation, just ignore this(apply ethereum enhancement commit may fix this)
+		return nil
+	}
+	// Set block time
+	header.Time.SetUint64(myBlockTime)
 
 	// Set default pendingProducers, pendingVersion and ProposePendingProducersBlock
 	// dposIBM, proposedIBM
