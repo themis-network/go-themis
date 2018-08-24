@@ -1,12 +1,13 @@
 package dpos
 
 import (
-    "math/big"
-    "testing"
-    "time"
-    
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/core/types"
+	"github.com/themis-network/go-themis/params"
 )
 
 var (
@@ -28,8 +29,10 @@ func TestCalculateBlockTime(t *testing.T) {
 		Number:          new(big.Int).SetUint64(0),
 		ActiveProducers: producers,
 	}
+	
+	dposEngine := New(&params.DposConfig{})
 
-	blockTime1, err := calculateNextBlockTime(nil, genesisHeader, producer0)
+	blockTime1, err := dposEngine.calculateNextBlockTime(nil, genesisHeader, producer0)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -43,7 +46,7 @@ func TestCalculateBlockTime(t *testing.T) {
 	// Check at a different time point
 	time.Sleep(time.Second * 3)
 
-	err = verifyBlockTime(nil, genesisHeader, newHeader)
+	err = dposEngine.verifyBlockTime(nil, genesisHeader, newHeader)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
