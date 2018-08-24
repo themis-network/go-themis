@@ -366,6 +366,9 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 
 	// Verify ProposedIBM and DposIBM
 	producerSize := len(parent.ActiveProducers)
+	if producerSize <= 0 {
+		return errInvalidActiveProducerList
+	}
 	proposed := false
 	proposedList := set{0, make([]list, producerSize)}
 	i := parent.Number.Uint64()
@@ -481,6 +484,14 @@ func (d *Dpos) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 	d.lock.RLock()
 	signer, signFn := d.signer, d.signFn
 	d.lock.RUnlock()
+	
+	// Set default field
+	lastHeader := chain.CurrentHeader()
+	// Just check signer can seal.
+	_, err := getSignerIndex(lastHeader, signer)
+	if err != nil {
+		return nil, err
+	}
 
 	if !bytes.Equal(signer[:], header.Coinbase[:]) {
 		return nil, errInvalidCoinbase
@@ -531,7 +542,6 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Get next block time, will return err is header.coinBase is unauthorized.
 	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(lastHeader.Number.Uint64()-1), lastHeader, header.Coinbase)
 	if err != nil {
-		// Since every node will start this operation, just ignore this(apply ethereum enhancement commit may fix this)
 		return nil
 	}
 	// Set block time
@@ -562,6 +572,9 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
 
 	producerSize := len(lastHeader.ActiveProducers)
+	if producerSize <= 0 {
+		return errInvalidActiveProducerList
+	}
 	proposed := false
 	proposedList := set{0, make([]list, producerSize)}
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
