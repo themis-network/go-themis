@@ -330,15 +330,13 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([
 		filter = NewBlockFilter(api.backend, *crit.BlockHash, crit.Addresses, crit.Topics)
 	} else {
 		// Convert the RPC block numbers into internal representations
-		var (
-			begin int64
-			end   int64
-		)
-		if crit.FromBlock == nil {
-			begin = int64(rpc.LatestBlockNumber)
+		begin := rpc.LatestBlockNumber.Int64()
+		if crit.FromBlock != nil {
+			begin = crit.FromBlock.Int64()
 		}
-		if crit.ToBlock == nil {
-			end = int64(rpc.LatestBlockNumber)
+		end := rpc.LatestBlockNumber.Int64()
+		if crit.ToBlock != nil {
+			end = crit.ToBlock.Int64()
 		}
 		// Construct the range filter
 		filter = NewRangeFilter(api.backend, begin, end, crit.Addresses, crit.Topics)
@@ -564,7 +562,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 func decodeAddress(s string) (common.Address, error) {
 	b, err := hexutil.Decode(s)
 	if err == nil && len(b) != common.AddressLength {
-		err = fmt.Errorf("hex has invalid length %d after decoding", len(b))
+		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for address", len(b), common.AddressLength)
 	}
 	return common.BytesToAddress(b), err
 }
@@ -572,7 +570,7 @@ func decodeAddress(s string) (common.Address, error) {
 func decodeTopic(s string) (common.Hash, error) {
 	b, err := hexutil.Decode(s)
 	if err == nil && len(b) != common.HashLength {
-		err = fmt.Errorf("hex has invalid length %d after decoding", len(b))
+		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for topic", len(b), common.HashLength)
 	}
 	return common.BytesToHash(b), err
 }
