@@ -48,7 +48,6 @@ var (
 		ArgsUsage: "<genesisPath>",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
-			utils.LightModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -66,7 +65,7 @@ It expects the genesis file as argument.`,
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 			utils.GCModeFlag,
 			utils.CacheDatabaseFlag,
 			utils.CacheGCFlag,
@@ -87,7 +86,7 @@ processing will proceed even if an individual RLP-file import failure occurs.`,
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -105,7 +104,7 @@ be gzipped.`,
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -119,7 +118,7 @@ be gzipped.`,
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
+			utils.SyncModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -148,7 +147,6 @@ The first argument must be the directory containing the blockchain to download f
 		ArgsUsage: " ",
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
-			utils.LightModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `
@@ -162,7 +160,6 @@ Remove blockchain and state databases`,
 		Flags: []cli.Flag{
 			utils.DataDirFlag,
 			utils.CacheFlag,
-			utils.LightModeFlag,
 		},
 		Category: "BLOCKCHAIN COMMANDS",
 		Description: `

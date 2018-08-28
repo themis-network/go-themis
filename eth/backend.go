@@ -129,15 +129,15 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		engine:         CreateConsensusEngine(ctx, chainConfig, &config.Ethash, config.MinerNotify, chainDb),
 		shutdownChan:   make(chan bool),
 		networkID:      config.NetworkId,
-		gasPrice:       config.GasPrice,
+		gasPrice:       config.MinerGasPrice,
 		etherbase:      config.Etherbase,
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
-		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks),
+		bloomIndexer:   NewBloomIndexer(chainDb, params.BloomBitsBlocks, bloomConfirms),
 	}
 	
 	// Set dpos call contract
 	if dpos, ok := eth.engine.(*dpos.Dpos); ok {
-		log.Info("set dpos call function")
+		log.Info("Set dpos call function")
 		dpos.SetCallFunc(eth.callContract)
 	}
 
@@ -146,7 +146,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 	if !config.SkipBcVersionCheck {
 		bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 		if bcVersion != core.BlockChainVersion && bcVersion != 0 {
-			return nil, fmt.Errorf("Blockchain DB version mismatch (%d / %d). Run geth upgradedb.\n", bcVersion, core.BlockChainVersion)
+			return nil, fmt.Errorf("Blockchain DB version mismatch (%d / %d).\n", bcVersion, core.BlockChainVersion)
 		}
 		rawdb.WriteDatabaseVersion(chainDb, core.BlockChainVersion)
 	}
@@ -175,13 +175,13 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		return nil, err
 	}
 
-	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.engine)
-	eth.miner.SetExtra(makeExtraData(config.ExtraData))
+	eth.miner = miner.New(eth, eth.chainConfig, eth.EventMux(), eth.engine, config.MinerRecommit)
+	eth.miner.SetExtra(makeExtraData(config.MinerExtraData))
 
 	eth.APIBackend = &EthAPIBackend{eth, nil}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
-		gpoParams.Default = config.GasPrice
+		gpoParams.Default = config.MinerGasPrice
 	}
 	eth.APIBackend.gpo = gasprice.NewOracle(eth.APIBackend, gpoParams)
 
