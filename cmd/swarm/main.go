@@ -40,10 +40,10 @@ import (
 	"github.com/themis-network/go-themis/node"
 	"github.com/themis-network/go-themis/p2p"
 	"github.com/themis-network/go-themis/p2p/discover"
-	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/swarm"
 	bzzapi "github.com/themis-network/go-themis/swarm/api"
 	swarmmetrics "github.com/themis-network/go-themis/swarm/metrics"
+	sv "github.com/themis-network/go-themis/swarm/version"
 
 	"gopkg.in/urfave/cli.v1"
 )
@@ -164,7 +164,7 @@ var defaultNodeConfig = node.DefaultConfig
 // This init function sets defaults so cmd/swarm can run alongside geth.
 func init() {
 	defaultNodeConfig.Name = clientIdentifier
-	defaultNodeConfig.Version = params.VersionWithCommit(gitCommit)
+	defaultNodeConfig.Version = sv.VersionWithCommit(gitCommit)
 	defaultNodeConfig.P2P.ListenAddr = ":30399"
 	defaultNodeConfig.IPCPath = "bzzd.ipc"
 	// Set flag defaults for --help display.
@@ -363,7 +363,7 @@ DEPRECATED: use 'swarm db clean'.
 	app.Flags = append(app.Flags, swarmmetrics.Flags...)
 	app.Before = func(ctx *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
-		if err := debug.Setup(ctx); err != nil {
+		if err := debug.Setup(ctx, ""); err != nil {
 			return err
 		}
 		swarmmetrics.Setup(ctx)
@@ -384,7 +384,8 @@ func main() {
 
 func version(ctx *cli.Context) error {
 	fmt.Println(strings.Title(clientIdentifier))
-	fmt.Println("Version:", params.Version)
+	fmt.Println(strings.Title(clientIdentifier))
+	fmt.Println("Version:", sv.VersionWithMeta)
 	if gitCommit != "" {
 		fmt.Println("Git Commit:", gitCommit)
 	}

@@ -38,7 +38,7 @@ func (t *EscrowNode) startApiServer(){
 		},
 	}
 
-	rpc.StartHTTPEndpoint(t.config.Endpoint, apis, modules, cors, vhosts)
+	rpc.StartHTTPEndpoint(t.config.Endpoint, apis, modules, cors, vhosts, rpc.DefaultHTTPTimeouts)
 }
 
 // NewPublicWeb3API creates a new Web3Service instance

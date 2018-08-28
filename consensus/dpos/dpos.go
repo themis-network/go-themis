@@ -698,6 +698,11 @@ func (d *Dpos) APIs(chain consensus.ChainReader) []rpc.API {
 	}}
 }
 
+// Close implements consensus.Engine. It's a noop for dpos as there is are no background threads.
+func (d *Dpos) Close() error {
+	return nil
+}
+
 func (d *Dpos) getNextBlockTime(grandParent *types.Header, parent *types.Header, signer common.Address) (uint64, error) {
 	blockTime, err := d.calculateNextBlockTime(grandParent, parent, signer)
 	if err != nil {

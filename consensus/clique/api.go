@@ -1,4 +1,4 @@
-// Copyright 2017 The go-themis Authors
+	// Copyright 2017 The go-themis Authors
 // This file is part of the go-themis library.
 //
 // The go-themis library is free software: you can redistribute it and/or modify
@@ -82,7 +82,7 @@ func (api *API) GetSigners(number *rpc.BlockNumber) ([]common.Address, error) {
 	return snap.signers(), nil
 }
 
-// GetSignersAtHash retrieves the state snapshot at a given block.
+// GetSignersAtHash retrieves list of authorized signers at the specified block.
 func (api *API) GetSignersAtHash(hash common.Hash) ([]common.Address, error) {
 	header := api.chain.GetHeaderByHash(hash)
 	if header == nil {
