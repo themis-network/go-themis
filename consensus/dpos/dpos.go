@@ -313,12 +313,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	if number == 0 {
 		return nil
 	}
-	var parent *types.Header
-	if len(parents) > 0 {
-		parent = parents[len(parents)-1]
-	} else {
-		parent = chain.GetHeader(header.ParentHash, number-1)
-	}
+	parent := getHeader(chain, parents, header.Number.Uint64()-1, header)
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
@@ -331,12 +326,12 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		return errInvalidPendingProducerList
 	}
 
-	// Call system contract to check proposed pending producer
+	// Validate propose block number, the list of pending producers will be checked by VerifyPendingProducers
 	if header.PendingVersion == parent.PendingVersion+1 {
 		// Valid propose pending block except pending producers, which will be validated in body
-		lastEpochNumNewest := number/d.config.Epoch*d.config.Epoch - 1
-		lastEpochBlockNewest := getHeader(chain, parents, number, lastEpochNumNewest)
-		if lastEpochBlockNewest == nil || parent.PendingVersion-lastEpochBlockNewest.PendingVersion != 0 {
+		lastEpochEndBlockNum := number/d.config.Epoch*d.config.Epoch - 1
+		lastEpochEndBlock := getHeader(chain, parents, lastEpochEndBlockNum, header)
+		if lastEpochEndBlock == nil || parent.PendingVersion-lastEpochEndBlock.PendingVersion != 0 {
 			return errInvalidPendingProducerBlock
 		}
 	}
@@ -345,7 +340,6 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		return errInvalidPendingProducersVersion
 	}
 
-	// Verify the ActiveProducers
 	// Producer list must be same as long as version is the same
 	if header.ActiveVersion == parent.ActiveVersion && !compareProducers(header.ActiveProducers, parent.ActiveProducers) {
 		return errInvalidActiveProducerList
@@ -374,7 +368,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	proposedList := mapset.NewSet()
 	i := parent.Number.Uint64()
 	for ; i != parent.ProposedIBM.Uint64(); i-- {
-		iheader := getHeader(chain, parents, number, i)
+		iheader := getHeader(chain, parents, i, header)
 		// Break if can not get header before current block
 		// IBM should be same with parent is active version changes
 		if iheader == nil || iheader.ActiveVersion != parent.ActiveVersion {
@@ -395,7 +389,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 	}
 	// Header.dposIBM and header.proposedIBM should be the latest confirmed block related.
 	if proposed {
-		proposedBlock := getHeader(chain, parents, number, i)
+		proposedBlock := getHeader(chain, parents, i, header)
 		if proposedBlock == nil || proposedBlock.ProposedIBM.Cmp(header.DposIBM) != 0 || header.ProposedIBM.Uint64()-i != 0 {
 			return errInvalidIBM
 		}
@@ -407,7 +401,11 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 // VerifyPendingProducer check pending producers after parent block state have been written
 // cause it have to call evm to get producers
 func (d *Dpos) VerifyPendingProducers(chain consensus.ChainReader, header *types.Header) error {
-	parent := chain.GetHeaderByNumber(header.Number.Uint64() - 1)
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	if parent == nil {
+		return consensus.ErrUnknownAncestor
+	}
+
 	if header.PendingVersion != parent.PendingVersion+1 {
 		return nil
 	}
@@ -451,17 +449,8 @@ func (d *Dpos) verifySeal(chain consensus.ChainReader, header *types.Header, par
 	}
 
 	// If parent's number is 0(genesis block), grandParent will get nil, so it's ok.
-	var parent, grand *types.Header
-	if len(parents) > 0 {
-		parent = parents[len(parents)-1]
-	} else {
-		parent = chain.GetHeader(header.ParentHash, number-1)
-	}
-	if len(parents) > 1 {
-		grand = parents[len(parents)-2]
-	} else {
-		grand = chain.GetHeader(parent.ParentHash, parent.Number.Uint64()-1)
-	}
+	parent := getHeader(chain, parents, number-1, header)
+	grand := getHeader(chain, parents, number-2, header)
 	// Ensure signer signs at his time; Also check authority of signer
 	if err := d.verifyBlockTime(grand, parent, header); err != nil {
 		return err
@@ -600,11 +589,11 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	}
 
 	// The Newest block header of last epoch
-	lastEpochNumNewest := header.Number.Uint64()/d.config.Epoch*d.config.Epoch - 1
-	lastEpochBlockNewest := chain.GetHeaderByNumber(lastEpochNumNewest)
+	lastEpochEndBlockNum := header.Number.Uint64()/d.config.Epoch*d.config.Epoch - 1
+	lastEpochEndBlock := chain.GetHeaderByNumber(lastEpochEndBlockNum)
 	// Try to propose a new pending producers scheme when epoch start or pending version not update on the first block of current epoch
 	// TODO will limit block number to try to propose new pending producers like producer size or something
-	pendingVersionNotUpdated := lastEpochBlockNewest != nil && (lastHeader.PendingVersion-lastEpochBlockNewest.PendingVersion) < 1
+	pendingVersionNotUpdated := lastEpochEndBlock != nil && (lastHeader.PendingVersion-lastEpochEndBlock.PendingVersion) < 1
 	if header.Number.Uint64()%d.config.Epoch == 0 || pendingVersionNotUpdated {
 		topProducers, err := d.getPendingProducers(lastHeader)
 		if err != nil {
@@ -801,7 +790,7 @@ func (d *Dpos) reachAfterLocalTime(originalBlockTime, localTime uint64, producer
 }
 
 // getSignerIndex returns index of signer in header.activeProducers, otherwise an error
-// will return
+// will be returned
 func getSignerIndex(header *types.Header, signer common.Address) (int64, error) {
 	var signerIndex int64
 	inturn := false
@@ -833,12 +822,26 @@ func compareProducers(src []common.Address, dst []common.Address) bool {
 }
 
 // getHeader try to get header from parents, then try to get from chain
-func getHeader(chain consensus.ChainReader, parents []*types.Header, currentNumber, number uint64) *types.Header {
+func getHeader(chain consensus.ChainReader, parents []*types.Header, number uint64, header *types.Header) *types.Header {
 	parentsSize := uint64(len(parents))
-	distance := currentNumber - number
+	distance := header.Number.Uint64() - number
 	if parentsSize >= distance {
 		return parents[parentsSize-distance]
 	}
 
-	return chain.GetHeaderByNumber(number)
+	// Reach to farthest ancestor
+	ancestor := types.CopyHeader(header)
+	if parentsSize > 0 {
+		ancestor = parents[0]
+		distance -= parentsSize
+	}
+
+	for i := uint64(0); i < distance; i++ {
+		if ancestor == nil {
+			return nil
+		}
+		ancestor = chain.GetHeader(ancestor.ParentHash, ancestor.Number.Uint64()-1)
+	}
+
+	return ancestor
 }
