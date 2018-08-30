@@ -2,10 +2,10 @@ package eth
 
 import (
 	"bytes"
-        "math"
-        "math/big"
-        "testing"
-    
+	"math"
+	"math/big"
+	"testing"
+
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/consensus/dpos"
 	"github.com/themis-network/go-themis/core"
@@ -45,45 +45,39 @@ func TestSystemContract(t *testing.T) {
 	chainConfig := genesis.Config
 	engine := dpos.New(chainConfig.Dpos)
 	blockchain, err := core.NewBlockChain(db, &core.CacheConfig{}, chainConfig, engine, vm.Config{})
+	defer blockchain.Stop()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	test := []TestData{
 		{
-			"proposalWaitTime",
-			"proposalWaitTime()",
-			[]byte{},
+			"proposalPeriod",
+			"getUint(bytes32)",
+			common.Hex2Bytes("0176c578c6f1c60c1adf0eaaf885a402ec027dab9df2b4835205d54193184560"),
 			common.BigToHash(new(big.Int).SetUint64(params.ProposalPeriod)).Bytes(),
 			core.MainSystemContractAddr,
 		},
 		{
-			"depositForJoin",
-			"depositForJoin()",
-			[]byte{},
+			"depositForProducer",
+			"getUint(bytes32)",
+			common.Hex2Bytes("0799480e52251d0e862f7cc87f3c9f1d3a2c8e57974ada4c8b8106a8054614f3"),
 			common.BigToHash(new(big.Int).SetUint64(params.DepositForProducer)).Bytes(),
-			core.RegSystemContractAddr,
+			core.MainSystemContractAddr,
 		},
 		{
 			"lockTimeForDeposit",
-			"lockTimeForDeposit()",
-			[]byte{},
+			"getUint(bytes32)",
+			common.Hex2Bytes("e85caaee110f28cbddd4d109b1db3c8368298ebf45e06b4db45f3e69fc48b271"),
 			common.BigToHash(new(big.Int).SetUint64(params.LockTimeForDeposit)).Bytes(),
-			core.RegSystemContractAddr,
+			core.MainSystemContractAddr,
 		},
 		{
-			"lengthOFEpoch",
-			"lengthOFEpoch()",
-			[]byte{},
+			"producerSize",
+			"getUint(bytes32)",
+			common.Hex2Bytes("22841227cd558f07474bfad22019d60e7b4a93ddf6394b5f1352e24d795e0fcb"),
 			common.BigToHash(new(big.Int).SetUint64(params.ProducerSize)).Bytes(),
-			core.RegSystemContractAddr,
-		},
-		{
-			"initOutTime",
-			"initOutTime()",
-			[]byte{},
-			common.BigToHash(new(big.Int).SetUint64(params.InitOutTime)).Bytes(),
-			core.RegSystemContractAddr,
+			core.MainSystemContractAddr,
 		},
 		{
 			"systemStorage",
@@ -100,25 +94,18 @@ func TestSystemContract(t *testing.T) {
 			core.RegSystemContractAddr,
 		},
 		{
-			"initOutTime",
-			"initOutTime()",
-			[]byte{},
-			common.BigToHash(new(big.Int).SetUint64(params.InitOutTime)).Bytes(),
-			core.VoteSystemContractAddr,
-		},
-		{
-			"leastDepositForVote",
-			"leastDepositForVote()",
-			[]byte{},
+			"stakeForVote",
+			"getUint(bytes32)",
+			common.Hex2Bytes("9e2c71bfb246dedd6b6c96d1800812ab07b83677f11defcec47899ebf39bf28e"),
 			common.BigToHash(new(big.Int).SetUint64(params.StakeForVote)).Bytes(),
-			core.VoteSystemContractAddr,
+			core.MainSystemContractAddr,
 		},
 		{
-			"lockTimeForVote",
-			"lockTimeForVote()",
-			[]byte{},
+			"lockTimeForStake",
+			"getUint(bytes32)",
+			common.Hex2Bytes("06fc176e8ac7c01c651cb919fca19296a8428ba1545a80886819b1e012f2e173"),
 			common.BigToHash(new(big.Int).SetUint64(params.LockTimeForStake)).Bytes(),
-			core.VoteSystemContractAddr,
+			core.MainSystemContractAddr,
 		},
 		{
 			"systemStorage",
@@ -129,15 +116,15 @@ func TestSystemContract(t *testing.T) {
 		},
 		{
 			"voteSystemContract address",
-			"getVoteSystemContract()",
-			[]byte{},
+			"getSystemContract(string)",
+			common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001373797374656d2e766f7465436f6e747261637400000000000000000000000000"),
 			core.VoteSystemContractAddr.Hash().Bytes(),
 			core.MainSystemContractAddr,
 		},
 		{
 			"regSystemContract address",
-			"getRegSystemContract()",
-			[]byte{},
+			"getSystemContract(string)",
+			common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001273797374656d2e726567436f6e74726163740000000000000000000000000000"),
 			core.RegSystemContractAddr.Hash().Bytes(),
 			core.MainSystemContractAddr,
 		},

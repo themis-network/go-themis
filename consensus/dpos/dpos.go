@@ -28,6 +28,14 @@ const (
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
 )
 
+// Mode defines the type and amount of Dpos verification an dpos engine makes.
+type Mode uint
+
+const (
+	ModeNormal Mode = iota
+	ModeTest
+)
+
 // Dpos delegated-proof-of-stake protocol constants.
 var (
 	extraVanity = 32 // Fixed number of extra-data prefix bytes reserved for signer vanity
@@ -189,7 +197,8 @@ type CallContractFunc func(core.SystemCall) ([]byte, error)
 
 // Dpos is the delegated-proof-of-stake consensus engine.
 type Dpos struct {
-	config *params.DposConfig // Consensus engine configuration parameters
+	config   *params.DposConfig // Consensus engine configuration parameters
+	DposMode Mode               // Mode used in dpos
 
 	signer common.Address // Themis address of the signing key
 	signFn SignerFn       // Signer function to authorize hashes with
@@ -222,6 +231,22 @@ func New(config *params.DposConfig) *Dpos {
 		systemContract: core.NewSystemContractCaller(),
 		signatures:     signatures,
 		rand:           NewRandom(0),
+		DposMode:       ModeNormal,
+	}
+}
+
+func NewTest() *Dpos {
+	conf := &params.DposConfig{}
+	conf.BlockPeriod = blockPeriod
+	conf.Epoch = epochLength
+	// Allocate caches and create the engine
+	signatures, _ := lru.NewARC(inmemorySignatures)
+	return &Dpos{
+		config:         conf,
+		systemContract: core.NewSystemContractCaller(),
+		signatures:     signatures,
+		rand:           NewRandom(0),
+		DposMode:       ModeTest,
 	}
 }
 
@@ -696,7 +721,8 @@ func (d *Dpos) getNextBlockTime(grandParent *types.Header, parent *types.Header,
 	}
 
 	// Get block time smaller than local time, add blockPeriod * producerSize to reach localTime
-	if blockTime < uint64(time.Now().Unix()) {
+	// Only used in normal mode
+	if blockTime < uint64(time.Now().Unix()) && d.DposMode == ModeNormal {
 		blockTime = d.reachAfterLocalTime(blockTime, uint64(time.Now().Unix()), len(parent.ActiveProducers))
 	}
 
@@ -794,6 +820,7 @@ func (d *Dpos) reachAfterLocalTime(originalBlockTime, localTime uint64, producer
 func getSignerIndex(header *types.Header, signer common.Address) (int64, error) {
 	var signerIndex int64
 	inturn := false
+
 	for i, active := range header.ActiveProducers {
 		if active == signer {
 			inturn = true
