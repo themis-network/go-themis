@@ -13,24 +13,32 @@ import (
 
 var _ = (*headerMarshaling)(nil)
 
+// MarshalJSON marshals as JSON.
 func (h Header) MarshalJSON() ([]byte, error) {
 	type Header struct {
-		ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
-		UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
-		Coinbase    common.Address `json:"miner"            gencodec:"required"`
-		Root        common.Hash    `json:"stateRoot"        gencodec:"required"`
-		TxHash      common.Hash    `json:"transactionsRoot" gencodec:"required"`
-		ReceiptHash common.Hash    `json:"receiptsRoot"     gencodec:"required"`
-		Bloom       Bloom          `json:"logsBloom"        gencodec:"required"`
-		Difficulty  *hexutil.Big   `json:"difficulty"       gencodec:"required"`
-		Number      *hexutil.Big   `json:"number"           gencodec:"required"`
-		GasLimit    hexutil.Uint64 `json:"gasLimit"         gencodec:"required"`
-		GasUsed     hexutil.Uint64 `json:"gasUsed"          gencodec:"required"`
-		Time        *hexutil.Big   `json:"timestamp"        gencodec:"required"`
-		Extra       hexutil.Bytes  `json:"extraData"        gencodec:"required"`
-		MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
-		Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`
-		Hash        common.Hash    `json:"hash"`
+		ParentHash                   common.Hash      `json:"parentHash"                   gencodec:"required"`
+		UncleHash                    common.Hash      `json:"sha3Uncles"                   gencodec:"required"`
+		Coinbase                     common.Address   `json:"miner"                        gencodec:"required"`
+		Root                         common.Hash      `json:"stateRoot"                    gencodec:"required"`
+		TxHash                       common.Hash      `json:"transactionsRoot"             gencodec:"required"`
+		ReceiptHash                  common.Hash      `json:"receiptsRoot"                 gencodec:"required"`
+		Bloom                        Bloom            `json:"logsBloom"                    gencodec:"required"`
+		Difficulty                   *hexutil.Big     `json:"difficulty"                   gencodec:"required"`
+		Number                       *hexutil.Big     `json:"number"                       gencodec:"required"`
+		GasLimit                     hexutil.Uint64   `json:"gasLimit"                     gencodec:"required"`
+		GasUsed                      hexutil.Uint64   `json:"gasUsed"                      gencodec:"required"`
+		Time                         *hexutil.Big     `json:"timestamp"                    gencodec:"required"`
+		Extra                        hexutil.Bytes    `json:"extraData"                    gencodec:"required"`
+		MixDigest                    common.Hash      `json:"mixHash"                      gencodec:"required"`
+		Nonce                        BlockNonce       `json:"nonce"                        gencodec:"required"`
+		PendingProducers             []common.Address `json:"pendingProducers"             gencodec:"required"`
+		PendingVersion               hexutil.Uint64   `json:"pendingVersion"               gencodec:"required"`
+		ProposePendingProducersBlock *hexutil.Big     `json:"proposePendingProducersBlock" gencodec:"required"`
+		ActiveProducers              []common.Address `json:"activeProducers"              gencodec:"required"`
+		ActiveVersion                hexutil.Uint64   `json:"activeVersion"                gencodec:"required"`
+		ProposedIBM                  *hexutil.Big     `json:"proposeIBM"                   gencodec:"required"`
+		DposIBM                      *hexutil.Big     `json:"dposIBM"                      gencodec:"required"`
+		Hash                         common.Hash      `json:"hash"`
 	}
 	var enc Header
 	enc.ParentHash = h.ParentHash
@@ -48,27 +56,42 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	enc.Extra = h.Extra
 	enc.MixDigest = h.MixDigest
 	enc.Nonce = h.Nonce
+	enc.PendingProducers = h.PendingProducers
+	enc.PendingVersion = hexutil.Uint64(h.PendingVersion)
+	enc.ProposePendingProducersBlock = (*hexutil.Big)(h.ProposePendingProducersBlock)
+	enc.ActiveProducers = h.ActiveProducers
+	enc.ActiveVersion = hexutil.Uint64(h.ActiveVersion)
+	enc.ProposedIBM = (*hexutil.Big)(h.ProposedIBM)
+	enc.DposIBM = (*hexutil.Big)(h.DposIBM)
 	enc.Hash = h.Hash()
 	return json.Marshal(&enc)
 }
 
+// UnmarshalJSON unmarshals from JSON.
 func (h *Header) UnmarshalJSON(input []byte) error {
 	type Header struct {
-		ParentHash  *common.Hash    `json:"parentHash"       gencodec:"required"`
-		UncleHash   *common.Hash    `json:"sha3Uncles"       gencodec:"required"`
-		Coinbase    *common.Address `json:"miner"            gencodec:"required"`
-		Root        *common.Hash    `json:"stateRoot"        gencodec:"required"`
-		TxHash      *common.Hash    `json:"transactionsRoot" gencodec:"required"`
-		ReceiptHash *common.Hash    `json:"receiptsRoot"     gencodec:"required"`
-		Bloom       *Bloom          `json:"logsBloom"        gencodec:"required"`
-		Difficulty  *hexutil.Big    `json:"difficulty"       gencodec:"required"`
-		Number      *hexutil.Big    `json:"number"           gencodec:"required"`
-		GasLimit    *hexutil.Uint64 `json:"gasLimit"         gencodec:"required"`
-		GasUsed     *hexutil.Uint64 `json:"gasUsed"          gencodec:"required"`
-		Time        *hexutil.Big    `json:"timestamp"        gencodec:"required"`
-		Extra       *hexutil.Bytes  `json:"extraData"        gencodec:"required"`
-		MixDigest   *common.Hash    `json:"mixHash"          gencodec:"required"`
-		Nonce       *BlockNonce     `json:"nonce"            gencodec:"required"`
+		ParentHash                   *common.Hash     `json:"parentHash"                   gencodec:"required"`
+		UncleHash                    *common.Hash     `json:"sha3Uncles"                   gencodec:"required"`
+		Coinbase                     *common.Address  `json:"miner"                        gencodec:"required"`
+		Root                         *common.Hash     `json:"stateRoot"                    gencodec:"required"`
+		TxHash                       *common.Hash     `json:"transactionsRoot"             gencodec:"required"`
+		ReceiptHash                  *common.Hash     `json:"receiptsRoot"                 gencodec:"required"`
+		Bloom                        *Bloom           `json:"logsBloom"                    gencodec:"required"`
+		Difficulty                   *hexutil.Big     `json:"difficulty"                   gencodec:"required"`
+		Number                       *hexutil.Big     `json:"number"                       gencodec:"required"`
+		GasLimit                     *hexutil.Uint64  `json:"gasLimit"                     gencodec:"required"`
+		GasUsed                      *hexutil.Uint64  `json:"gasUsed"                      gencodec:"required"`
+		Time                         *hexutil.Big     `json:"timestamp"                    gencodec:"required"`
+		Extra                        *hexutil.Bytes   `json:"extraData"                    gencodec:"required"`
+		MixDigest                    *common.Hash     `json:"mixHash"                      gencodec:"required"`
+		Nonce                        *BlockNonce      `json:"nonce"                        gencodec:"required"`
+		PendingProducers             []common.Address `json:"pendingProducers"             gencodec:"required"`
+		PendingVersion               *hexutil.Uint64  `json:"pendingVersion"               gencodec:"required"`
+		ProposePendingProducersBlock *hexutil.Big     `json:"proposePendingProducersBlock" gencodec:"required"`
+		ActiveProducers              []common.Address `json:"activeProducers"              gencodec:"required"`
+		ActiveVersion                *hexutil.Uint64  `json:"activeVersion"                gencodec:"required"`
+		ProposedIBM                  *hexutil.Big     `json:"proposedIBM"                   gencodec:"required"`
+		DposIBM                      *hexutil.Big     `json:"dposIBM"                      gencodec:"required"`
 	}
 	var dec Header
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -134,5 +157,33 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'nonce' for Header")
 	}
 	h.Nonce = *dec.Nonce
+	if dec.PendingProducers == nil {
+		return errors.New("missing required field 'pendingProducers' for Header")
+	}
+	h.PendingProducers = dec.PendingProducers
+	if dec.PendingVersion == nil {
+		return errors.New("missing required field 'pendingVersion' for Header")
+	}
+	h.PendingVersion = uint64(*dec.PendingVersion)
+	if dec.ProposePendingProducersBlock == nil {
+		return errors.New("missing required field 'proposePendingProducersBlock' for Header")
+	}
+	h.ProposePendingProducersBlock = (*big.Int)(dec.ProposePendingProducersBlock)
+	if dec.ActiveProducers == nil {
+		return errors.New("missing required field 'activeProducers' for Header")
+	}
+	h.ActiveProducers = dec.ActiveProducers
+	if dec.ActiveVersion == nil {
+		return errors.New("missing required field 'activeVersion' for Header")
+	}
+	h.ActiveVersion = uint64(*dec.ActiveVersion)
+	if dec.ProposedIBM == nil {
+		return errors.New("missing required field 'proposedIBM' for Header")
+	}
+	h.ProposedIBM = (*big.Int)(dec.ProposedIBM)
+	if dec.DposIBM == nil {
+		return errors.New("missing required field 'dposIBM' for Header")
+	}
+	h.DposIBM = (*big.Int)(dec.DposIBM)
 	return nil
 }
