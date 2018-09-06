@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hashicorp/golang-lru"
 	"github.com/themis-network/go-themis/common"
 	"github.com/themis-network/go-themis/common/mclock"
 	"github.com/themis-network/go-themis/consensus"
@@ -42,7 +43,6 @@ import (
 	"github.com/themis-network/go-themis/params"
 	"github.com/themis-network/go-themis/rlp"
 	"github.com/themis-network/go-themis/trie"
-	"github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
@@ -449,7 +449,7 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 		return fmt.Errorf("export failed: first (%d) is greater than last (%d)", first, last)
 	}
 	log.Info("Exporting batch of blocks", "count", last-first+1)
-	
+
 	start, reported := time.Now(), time.Now()
 	for nr := first; nr <= last; nr++ {
 		block := bc.GetBlockByNumber(nr)
@@ -966,6 +966,11 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	if !reorg && externTd.Cmp(localTd) == 0 {
 		// Split same-difficulty blocks by number, then at random
 		reorg = block.NumberU64() < currentBlock.NumberU64() || (block.NumberU64() == currentBlock.NumberU64() && mrand.Float64() < 0.5)
+
+		// Chose block with smaller timestamp as canonical chain
+		if bc.chainConfig.Dpos != nil {
+			reorg = block.NumberU64() == currentBlock.NumberU64() && currentBlock.Time().Cmp(block.Time()) < 0
+		}
 	}
 	if reorg {
 		// Reorganise the chain if the parent is not the head block
