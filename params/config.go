@@ -129,12 +129,14 @@ func (c *EthashConfig) String() string {
 // DposConfig is the consensus engine configs for delegated-proof-of-stake based sealing.
 type DposConfig struct {
 	// Consensus config
-	Producers   []common.Address `json:"producers"`   // Producers used in first epoch.
-	BlockPeriod uint64           `json:"blockPeriod"` // Minimum difference between two consecutive block's timestamps.
-	Epoch       uint64           `json:"epoch"`       // Default blocks after which try to propose a new pending producers scheme.
+	Producers           []common.Address `json:"producers"`           // Producers used in first epoch.
+	BlockPeriod         uint64           `json:"blockPeriod"`         // Minimum difference between two consecutive block's timestamps.
+	Epoch               uint64           `json:"epoch"`               // Default blocks after which try to propose a new pending producers scheme.
+	ProposeBlocksLength uint64           `json:"proposeBlocksLength"` // Default blocks lasts trying to propose a new pending producers scheme if failed.
 
 	// Contract config
 	ProducerSize       uint64 `json:"producerSize"`       // Size of producers will be used in consensus.
+	MaxProducerSize    uint64 `json:"maxProducerSize"`    // Max size of producer's length in contract
 	ProposalPeriod     uint64 `json:"proposalPeriod"`     // Seconds of proposal protected, after which can proposal a new one.
 	DepositForProducer uint64 `json:"depositForProducer"` // Least deposit should be locked by contract if one want to be a producer.
 	StakeForVote       uint64 `json:"stakeForVote"`       // Least stake should be locked by contract if one want to vote.
