@@ -63,13 +63,13 @@ func (d *Dpos) tryActiveNewProducersVersion(currentHeader, header *types.Header)
 func (d *Dpos) tryUpdateIBM(chain consensus.ChainReader, currentHeader, header *types.Header) error {
 	// Calculate header confirmed by 2/3 * producers + 1
 	// This will be called by miner, so it is always on canonical chain
-	proposedIBM, updated, err := d.getLatestConfirmedHeaderNumber(chain, currentHeader, header, nil, true)
+	proposedIBMHeader, updated, err := d.getLatestConfirmedHeader(chain, currentHeader, header, nil, true)
 	if err != nil {
 		return err
 	}
 	if updated {
-		header.DposIBM = new(big.Int).Set(chain.GetHeaderByNumber(proposedIBM).ProposedIBM)
-		header.ProposedIBM = new(big.Int).SetUint64(proposedIBM)
+		header.DposIBM = new(big.Int).Set(proposedIBMHeader.ProposedIBM)
+		header.ProposedIBM = new(big.Int).Set(proposedIBMHeader.Number)
 		return nil
 	}
 
@@ -79,35 +79,35 @@ func (d *Dpos) tryUpdateIBM(chain consensus.ChainReader, currentHeader, header *
 	return nil
 }
 
-func (d *Dpos) getLatestConfirmedHeaderNumber(chain consensus.ChainReader, currentHeader, header *types.Header, parents []*types.Header, onCanonical bool) (uint64, bool, error) {
+func (d *Dpos) getLatestConfirmedHeader(chain consensus.ChainReader, currentHeader, header *types.Header, parents []*types.Header, onCanonical bool) (*types.Header, bool, error) {
 	producerSize := len(currentHeader.ActiveProducers)
 	if producerSize <= 0 {
-		return 0, false, errInvalidActiveProducerList
+		return nil, false, errInvalidActiveProducerList
 	}
 
 	confirmCount := mapset.NewSet()
 	// Try to propose a new proposedIBM block(set proposedIBM block num)
+	iheader := currentHeader
 	proposedIBM := currentHeader.Number.Uint64()
 	for i := proposedIBM; i != currentHeader.ProposedIBM.Uint64(); i-- {
 
-		var iheader *types.Header
 		if onCanonical {
 			iheader = chain.GetHeaderByNumber(i)
 		} else {
-			iheader = getHeader(chain, parents, i, header, onCanonical)
+			iheader = getHeader(chain, parents, i, header)
 		}
 
 		if iheader == nil || iheader.ActiveVersion != currentHeader.ActiveVersion {
-			return i, false, nil
+			return currentHeader, false, nil
 		}
 
 		confirmCount.Add(iheader.Coinbase)
 		if confirmCount.Cardinality() >= (producerSize*2/3 + 1) {
-			return i, true, nil
+			return iheader, true, nil
 		}
 	}
 
-	return proposedIBM, false, nil
+	return currentHeader, false, nil
 }
 
 func (d *Dpos) tryProposePendingProducers(chain consensus.ChainReader, currentHeader, header *types.Header) error {
@@ -148,7 +148,7 @@ func (d *Dpos) verifyVersion(chain consensus.ChainReader, parents []*types.Heade
 	if header.PendingVersion == parent.PendingVersion+1 {
 		// Valid propose pending block except pending producers, which will be validated in body
 		lastEpochEndBlockNum := header.Number.Uint64()/d.config.Epoch*d.config.Epoch - 1
-		lastEpochEndBlock := getHeader(chain, parents, lastEpochEndBlockNum, header, false)
+		lastEpochEndBlock := getHeader(chain, parents, lastEpochEndBlockNum, header)
 		updateAllowed := header.Number.Uint64()-lastEpochEndBlockNum <= d.config.ProposeBlocksLength
 		if lastEpochEndBlock == nil || parent.PendingVersion-lastEpochEndBlock.PendingVersion != 0 || !updateAllowed {
 			return errInvalidPendingProducerBlock
@@ -188,7 +188,7 @@ func (d *Dpos) verifyIBM(chain consensus.ChainReader, parent, header *types.Head
 		return errInvalidActiveProducerList
 	}
 
-	proposedIBM, updated, err := d.getLatestConfirmedHeaderNumber(chain, parent, header, parents, false)
+	proposedIBMHeader, updated, err := d.getLatestConfirmedHeader(chain, parent, header, parents, false)
 	// Header.dposIBM and header.proposedIBM should be same with parent if not proposed
 	if err != nil {
 		return err
@@ -198,8 +198,7 @@ func (d *Dpos) verifyIBM(chain consensus.ChainReader, parent, header *types.Head
 	}
 	// Header.dposIBM and header.proposedIBM should be the latest confirmed block related.
 	if updated {
-		proposedBlock := getHeader(chain, parents, proposedIBM, header, false)
-		if proposedBlock == nil || proposedBlock.ProposedIBM.Cmp(header.DposIBM) != 0 || header.ProposedIBM.Uint64()-proposedIBM != 0 {
+		if proposedIBMHeader == nil || proposedIBMHeader.ProposedIBM.Cmp(header.DposIBM) != 0 || header.ProposedIBM.Uint64()-proposedIBMHeader.Number.Uint64() != 0 {
 			return errInvalidIBM
 		}
 	}

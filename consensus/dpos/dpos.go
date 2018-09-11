@@ -341,7 +341,7 @@ func (d *Dpos) verifyDposField(chain consensus.ChainReader, header *types.Header
 		return nil
 	}
 
-	parent := getHeader(chain, parents, header.Number.Uint64()-1, header, false)
+	parent := getHeader(chain, parents, header.Number.Uint64()-1, header)
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
@@ -417,8 +417,8 @@ func (d *Dpos) verifySeal(chain consensus.ChainReader, header *types.Header, par
 	}
 
 	// If parent's number is 0(genesis block), grandParent will get nil, so it's ok.
-	parent := getHeader(chain, parents, number-1, header, false)
-	grand := getHeader(chain, parents, number-2, header, false)
+	parent := getHeader(chain, parents, number-1, header)
+	grand := getHeader(chain, parents, number-2, header)
 	// Ensure signer signs at his time; Also check authority of signer
 	if err := d.verifyBlockTime(grand, parent, header); err != nil {
 		return err
@@ -713,7 +713,7 @@ func compareProducers(src []common.Address, dst []common.Address) bool {
 }
 
 // getHeader try to get header from parents, then try to get from chain
-func getHeader(chain consensus.ChainReader, parents []*types.Header, number uint64, header *types.Header, onCanonical bool) *types.Header {
+func getHeader(chain consensus.ChainReader, parents []*types.Header, number uint64, header *types.Header) *types.Header {
 	parentsSize := uint64(len(parents))
 	distance := header.Number.Uint64() - number
 	if parentsSize >= distance {
