@@ -714,10 +714,6 @@ func compareProducers(src []common.Address, dst []common.Address) bool {
 
 // getHeader try to get header from parents, then try to get from chain
 func getHeader(chain consensus.ChainReader, parents []*types.Header, number uint64, header *types.Header, onCanonical bool) *types.Header {
-	if onCanonical {
-		return chain.GetHeaderByNumber(number)
-	}
-
 	parentsSize := uint64(len(parents))
 	distance := header.Number.Uint64() - number
 	if parentsSize >= distance {

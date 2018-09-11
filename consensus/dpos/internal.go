@@ -90,7 +90,13 @@ func (d *Dpos) getLatestConfirmedHeaderNumber(chain consensus.ChainReader, curre
 	proposedIBM := currentHeader.Number.Uint64()
 	for i := proposedIBM; i != currentHeader.ProposedIBM.Uint64(); i-- {
 
-		iheader := getHeader(chain, parents, i, header, onCanonical)
+		var iheader *types.Header
+		if onCanonical {
+			iheader = chain.GetHeaderByNumber(i)
+		} else {
+			iheader = getHeader(chain, parents, i, header, onCanonical)
+		}
+
 		if iheader == nil || iheader.ActiveVersion != currentHeader.ActiveVersion {
 			return i, false, nil
 		}
