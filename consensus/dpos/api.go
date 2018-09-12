@@ -45,12 +45,16 @@ type ProposalInfo struct {
 	DisapproveCount  *big.Int       `json:"disapproveCount"         gencodec:"required"`
 }
 
+var (
+	ErrInvalidInput = errors.New("invalid input")
+)
+
 // Get active producers of the giving block number
 func (api *API) GetActiveProducers(blockNumber *big.Int) ([]common.Address, error) {
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
-	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) >= 0 {
-		return (*header).ActiveProducers, nil
+	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
+		return nil, ErrInvalidInput
 	} else {
 		header = api.chain.GetHeaderByNumber(blockNumber.Uint64())
 		return (*header).ActiveProducers, nil
@@ -61,8 +65,8 @@ func (api *API) GetActiveProducers(blockNumber *big.Int) ([]common.Address, erro
 func (api *API) GetPendingProducer(blockNumber *big.Int) ([]common.Address, error) {
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
-	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) >= 0 {
-		return (*header).PendingProducers, nil
+	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
+		return nil, ErrInvalidInput
 	} else {
 		header = api.chain.GetHeaderByNumber(blockNumber.Uint64())
 		return (*header).PendingProducers, nil
@@ -73,7 +77,9 @@ func (api *API) GetPendingProducer(blockNumber *big.Int) ([]common.Address, erro
 func (api *API) GetAllProducers(blockNumber *big.Int) (*ProducersInfo, error) {
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
-	if blockNumber != nil && (*blockNumber).Cmp(big.NewInt(0)) > 0 && (*blockNumber).Cmp(header.Number) < 0 {
+	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
+		return nil, ErrInvalidInput
+	} else {
 		header = api.chain.GetHeaderByNumber(blockNumber.Uint64())
 	}
 
@@ -103,11 +109,13 @@ func (api *API) GetAllProducers(blockNumber *big.Int) (*ProducersInfo, error) {
 
 func (api *API) GetVoteInfo(addr *common.Address, blockNumber *big.Int) (*Voteinfo, error) {
 	if addr == nil {
-		return nil, errors.New("invalid address")
+		return nil, ErrInvalidInput
 	}
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
-	if blockNumber != nil && (*blockNumber).Cmp(big.NewInt(0)) > 0 && (*blockNumber).Cmp(header.Number) < 0 {
+	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
+		return nil, ErrInvalidInput
+	} else {
 		header = api.chain.GetHeaderByNumber(blockNumber.Uint64())
 	}
 
@@ -154,7 +162,9 @@ func (api *API) GetVoteInfo(addr *common.Address, blockNumber *big.Int) (*Votein
 func (api *API) GetProposal(blockNumber *big.Int) (*ProposalInfo, error) {
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
-	if blockNumber != nil && (*blockNumber).Cmp(big.NewInt(0)) > 0 && (*blockNumber).Cmp(header.Number) < 0 {
+	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
+		return nil, ErrInvalidInput
+	} else {
 		header = api.chain.GetHeaderByNumber(blockNumber.Uint64())
 	}
 
