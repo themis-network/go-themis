@@ -675,3 +675,47 @@ web3._extend({
 	]
 });
 `
+
+const Dpos_JS = `
+web3._extend({
+	property: 'dpos',
+	methods: [
+		new web3._extend.Method({
+			name: 'getPendingProducer',
+			call: 'dpos_getPendingProducer',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getActiveProducers',
+			call: 'dpos_getActiveProducers',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getAllProducers',
+			call: 'dpos_getAllProducers',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getSystemContract',
+			call: 'dpos_getSystemContract',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getProposal',
+			call: 'dpos_getProposal',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getVoteInfo',
+			call: 'dpos_getVoteInfo',
+			params: 1,
+			inputFormatter: [null]
+		}),
+	]
+});
+`
