@@ -21,7 +21,6 @@ const (
 	regSystemContractABI  = `[{"constant":true,"inputs":[],"name":"getAllProducersInfo","outputs":[{"name":"","type":"address[]"},{"name":"","type":"uint256[]"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
 	voteSystemContractABI = `[{"constant":true,"inputs":[{"name":"voter","type":"address"}],"name":"getVoteInfo","outputs":[{"name":"","type":"address"},{"name":"","type":"address[]"},{"name":"","type":"uint256"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
 
-
 	// Input data for get reg system contract address
 	// web3.sha3("getSystemContract(string)")[:4] + abi.encode("system.regContract")
 	getRegSystemContractInput   = "79e415950000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001273797374656d2e726567436f6e74726163740000000000000000000000000000"
