@@ -80,6 +80,13 @@ func TestSystemContract(t *testing.T) {
 			core.MainSystemContractAddr,
 		},
 		{
+			"maxProducerSize",
+			"getUint(bytes32)",
+			common.Hex2Bytes("43b3adf5b12f6bf287de43b7625ab6911c0852ff05b0ae70f416fa07ec19f634"),
+			common.BigToHash(new(big.Int).SetUint64(params.MaxProducersSize)).Bytes(),
+			core.MainSystemContractAddr,
+		},
+		{
 			"systemStorage",
 			"systemStorage()",
 			[]byte{},
@@ -131,14 +138,14 @@ func TestSystemContract(t *testing.T) {
 		{
 			"check vote system contract",
 			"isSystemContract(address)",
-			common.BytesToHash([]byte{11}).Bytes(),
+			common.BytesToHash([]byte{102}).Bytes(),
 			core.VoteContractBoolStorageValue.Bytes(),
 			core.MainSystemContractAddr,
 		},
 		{
 			"check reg system contract",
 			"isSystemContract(address)",
-			common.BytesToHash([]byte{10}).Bytes(),
+			common.BytesToHash([]byte{101}).Bytes(),
 			core.RegContractBoolStorageValue.Bytes(),
 			core.MainSystemContractAddr,
 		},
