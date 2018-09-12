@@ -74,8 +74,8 @@ func (d *Dpos) tryUpdateIBM(chain consensus.ChainReader, currentHeader, header *
 	}
 
 	// Keep same with parent
-	header.DposIBM.Set(currentHeader.DposIBM)
-	header.ProposedIBM.Set(currentHeader.ProposedIBM)
+	header.DposIBM = new(big.Int).Set(currentHeader.DposIBM)
+	header.ProposedIBM = new(big.Int).Set(currentHeader.ProposedIBM)
 	return nil
 }
 
