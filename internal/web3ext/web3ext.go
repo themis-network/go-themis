@@ -714,8 +714,7 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'getVoteInfo',
 			call: 'dpos_getVoteInfo',
-			params: 1,
-			inputFormatter: [null]
+			params: 2,
 		}),
 	]
 });
