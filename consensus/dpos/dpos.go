@@ -491,7 +491,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Get next block time, will return err is header.coinBase is unauthorized.
 	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(currentHeader.Number.Uint64()-1), currentHeader, header.Coinbase)
 	if err != nil {
-		return err
+		return nil
 	}
 	// Set block time
 	header.Time.SetUint64(myBlockTime)

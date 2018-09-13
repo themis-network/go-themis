@@ -108,9 +108,6 @@ func (api *API) GetAllProducers(blockNumber *big.Int) (*ProducersInfo, error) {
 }
 
 func (api *API) GetVoteInfo(addr *common.Address, blockNumber *big.Int) (*Voteinfo, error) {
-	if addr == nil {
-		return nil, ErrInvalidInput
-	}
 	// Retrieve the requested block number (or current if none requested)
 	header := api.chain.CurrentHeader()
 	if blockNumber == nil || (*blockNumber).Cmp(big.NewInt(0)) < 0 || (*blockNumber).Cmp(header.Number) > 0 {
