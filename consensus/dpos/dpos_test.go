@@ -2,6 +2,7 @@ package dpos
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"math/big"
 	"testing"
 	"time"
@@ -45,6 +46,19 @@ func (ap *testerAccountPool) address(account string) common.Address {
 	}
 	// Resolve and return the Themis address
 	return crypto.PubkeyToAddress(ap.accounts[account].PublicKey)
+}
+
+func (ap *testerAccountPool) addresses(accounts []string) []common.Address {
+	if len(accounts) == 0 {
+		return []common.Address{}
+	}
+
+	res := make([]common.Address, 0, len(accounts))
+	for _, account := range accounts {
+		res = append(res, ap.address(account))
+	}
+
+	return res
 }
 
 type exceptIBM struct {
@@ -213,12 +227,7 @@ func TestIBMCalculate(t *testing.T) {
 	// Create the account pool and generate the initial set of signers
 	accounts := newTesterAccountPool()
 	signersID := []string{"A", "B", "C", "D"}
-	signers := make(map[string]common.Address, 0)
-	producers := make([]common.Address, len(signersID))
-	for i, id := range signersID {
-		signers[id] = accounts.address(id)
-		producers[i] = signers[id]
-	}
+	producers := accounts.addresses(signersID)
 
 	tests := []struct {
 		singers []string
@@ -315,48 +324,241 @@ func TestIBMCalculate(t *testing.T) {
 
 	gspec := core.DefaultGenesisBlock()
 	gspec.Config.Dpos.Producers = producers
-	dpos := NewTest()
 
 	for j, tt := range tests {
 		// Start with a new memory db
 		db := ethdb.NewMemDatabase()
-		genesis := gspec.MustCommit(db)
+		gspec.MustCommit(db)
+		dpos := NewTest()
 		blockchain, _ := core.NewBlockChain(db, nil, gspec.Config, dpos, vm.Config{})
 		defer blockchain.Stop()
 
-		chain, _ := core.GenerateChain(gspec.Config, genesis, dpos, db, len(tt.singers), func(i int, gen *core.BlockGen) {
-			index := i % len(tt.singers)
-			gen.SetCoinbase(signers[tt.singers[index]])
+		chain, err := generateDposChain(accounts, tt.singers, 0, gspec.Config, db, blockchain, func(i int, gen *core.BlockGen) {
+			gen.SetCoinbase(accounts.address(tt.singers[i]))
 		})
-
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		// Check chain can be inserted into blockchain
+		if i, err := blockchain.InsertChain(chain); err != nil {
+			t.Errorf("test %d insert block %d: %v\n", j, chain[i].NumberU64(), err)
+			continue
+		}
+		// Check ibm calculation
 		for i, block := range chain {
-			newHeader := block.Header()
-			if err := dpos.Prepare(blockchain, newHeader); err != nil {
-				t.Errorf(err.Error())
-			}
-			if i != 0 {
-				newHeader.ParentHash = chain[i-1].Hash()
-			}
-			index := i % len(tt.singers)
-			accounts.sign(newHeader, tt.singers[index])
-			chain[i] = block.WithSeal(newHeader)
-
-			if i, err := blockchain.InsertChain([]*types.Block{chain[i]}); err != nil {
-				t.Errorf("test %d insert block %d: %v\n", j, chain[i].NumberU64(), err)
-				return
-			}
-			if tt.wants[i].DposIBM != newHeader.DposIBM.Uint64() {
-				t.Errorf("test %d block %d dposIBM error: have %d, except %d", j, newHeader.Number, newHeader.DposIBM, tt.wants[i].DposIBM)
+			generateHeader := block.Header()
+			if tt.wants[i].DposIBM != generateHeader.DposIBM.Uint64() {
+				t.Errorf("test %d block %d dposIBM error: have %d, except %d", j, generateHeader.Number, generateHeader.DposIBM, tt.wants[i].DposIBM)
 			}
 
-			if tt.wants[i].ProposedIBM != newHeader.ProposedIBM.Uint64() {
-				t.Errorf("test %d block %d ProposedIBM error: have %d, except %d", j, newHeader.Number, newHeader.ProposedIBM, tt.wants[i].ProposedIBM)
+			if tt.wants[i].ProposedIBM != generateHeader.ProposedIBM.Uint64() {
+				t.Errorf("test %d block %d ProposedIBM error: have %d, except %d", j, generateHeader.Number, generateHeader.ProposedIBM, tt.wants[i].ProposedIBM)
 			}
 		}
 	}
 }
 
+// For dpos prepare purpose
+type dposChain struct {
+	blocks     []*types.Block
+	blockMap   map[uint64]*types.Block
+	startBlock uint64
+}
+
+func NewDposTestChain(blocks []*types.Block, parent uint64) *dposChain {
+	res := &dposChain{}
+	res.blocks = make([]*types.Block, len(blocks))
+	copy(res.blocks, blocks)
+	res.startBlock = parent + 1
+
+	res.blockMap = make(map[uint64]*types.Block, 0)
+	for _, block := range blocks {
+		if block == nil {
+			continue
+		}
+		res.blockMap[block.NumberU64()] = block
+	}
+
+	return res
+}
+
+func (d *dposChain) append(block *types.Block) {
+	d.blocks = append(d.blocks, block)
+	d.blockMap[block.NumberU64()] = block
+}
+
+func (d *dposChain) Blocks() []*types.Block {
+	return d.blocks[d.startBlock:]
+}
+
+func (d *dposChain) Config() *params.ChainConfig {
+	panic("not supported")
+}
+
+func (d *dposChain) CurrentHeader() *types.Header {
+	return d.blocks[len(d.blocks)-1].Header()
+}
+
+func (d *dposChain) GetHeader(hash common.Hash, number uint64) *types.Header {
+	panic("not supported")
+}
+
+func (d *dposChain) GetHeaderByNumber(number uint64) *types.Header {
+	if _, ok := d.blockMap[number]; !ok {
+		return nil
+	}
+	return d.blockMap[number].Header()
+}
+
+func (d *dposChain) GetHeaderByHash(hash common.Hash) *types.Header {
+	panic("not supported")
+}
+
+func (d *dposChain) GetBlock(hash common.Hash, number uint64) *types.Block {
+	panic("not supported")
+}
+
+// generateDposChain generates blocks fit with dpos rules except pending producers which will call
+// evm to get producers from contract.
+func generateDposChain(accounts *testerAccountPool, signers []string, parent uint64, config *params.ChainConfig, db ethdb.Database, blockchain *core.BlockChain, gen func(i int, gen *core.BlockGen)) ([]*types.Block, error) {
+	testChain := make([]*types.Block, 0)
+	for i := uint64(0); i <= parent; i++ {
+		block := blockchain.GetBlockByNumber(i)
+		if block == nil {
+			return nil, errors.New("can not get ancestor from chain")
+		}
+		testChain = append(testChain, block)
+	}
+
+	if len(testChain) < 1 {
+		return nil, errors.New("can not get ancestor from chain")
+	}
+
+	dposEngine := NewTest()
+	blocks, _ := core.GenerateChain(config, testChain[len(testChain)-1], dposEngine, db, len(signers), gen)
+
+	testDposChain := NewDposTestChain(testChain, parent)
+
+	for i, block := range blocks {
+		dposHeader := block.Header()
+		if err := dposEngine.Prepare(testDposChain, dposHeader); err != nil {
+			return nil, err
+		}
+
+		if i != 0 {
+			dposHeader.ParentHash = blocks[i-1].Hash()
+		}
+
+		accounts.sign(dposHeader, signers[i])
+		blocks[i] = block.WithSeal(dposHeader)
+		testDposChain.append(blocks[i])
+	}
+
+	return testDposChain.Blocks(), nil
+}
+
+func TestDposIBMRule(t *testing.T) {
+	// Create the account pool and generate the initial set of signers
+	accounts := newTesterAccountPool()
+	signersID := []string{"A", "B", "C", "D"}
+	producers := accounts.addresses(signersID)
+
+	gspec := core.DefaultGenesisBlock()
+	gspec.Config.Dpos.Producers = producers
+	db := ethdb.NewMemDatabase()
+	gspec.MustCommit(db)
+	dpos := NewTest()
+	blockchain, _ := core.NewBlockChain(db, nil, gspec.Config, dpos, vm.Config{})
+	defer blockchain.Stop()
+
+	// Generate basic block for blockchain, dposIBM of current header is 6 after insert.
+	basicSigners := []string{"A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D"}
+	basicBlocks, err := generateDposChain(accounts, basicSigners, 0, gspec.Config, db, blockchain, func(i int, gen *core.BlockGen) {
+		gen.SetCoinbase(accounts.address(basicSigners[i]))
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if _, err := blockchain.InsertChain(basicBlocks); err != nil {
+		t.Error(err)
+		return
+	}
+
+	testes := []struct {
+		buildOn   uint64
+		prev      uint64
+		signers   []string
+		exceptErr error
+	}{
+		// Try to replace original chain with longer chain
+		{
+			buildOn:   0,
+			prev:      0,
+			signers:   []string{"A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D"},
+			exceptErr: errInvalidBlockBeforeDposIBM,
+		},
+		{
+			buildOn:   1,
+			prev:      0,
+			signers:   []string{"A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D"},
+			exceptErr: errInvalidBlockBeforeDposIBM,
+		},
+		{
+			buildOn:   2,
+			prev:      0,
+			signers:   []string{"C", "D", "A", "B", "C", "D", "A", "B", "C", "D"},
+			exceptErr: errInvalidBlockBeforeDposIBM,
+		},
+		// Try to insert a fork block before dpos ibm.
+		{
+			buildOn:   3,
+			prev:      0,
+			signers:   []string{"C"},
+			exceptErr: errInvalidBlockBeforeDposIBM,
+		},
+		// Try to insert some block(already know and all on canonical chain) and some new blocks after dposIBM
+		{
+			buildOn:   6,
+			prev:      2,
+			signers:   []string{"A", "B", "C", "D"},
+			exceptErr: nil,
+		},
+		// Try to insert some old and new blocks, but the parent of new blocks is before dposIBM
+		{
+			buildOn:   5,
+			prev:      2,
+			signers:   []string{"A", "B", "C", "D"},
+			exceptErr: errInvalidBlockBeforeDposIBM,
+		},
+	}
+
+	extra := []byte("make hash diff")
+	for i, test := range testes {
+		finalChain := make([]*types.Block, 0)
+		for i := test.buildOn - 1; i >= 0 && test.buildOn-i <= test.prev; i++ {
+			finalChain = append(finalChain, blockchain.GetBlockByNumber(i))
+		}
+
+		chain, err := generateDposChain(accounts, test.signers, test.buildOn, gspec.Config, db, blockchain, func(i int, gen *core.BlockGen) {
+			gen.SetCoinbase(accounts.address(test.signers[i]))
+			gen.SetExtra(extra)
+		})
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		finalChain = append(finalChain, chain...)
+
+		if _, err := blockchain.InsertChain(finalChain); err != test.exceptErr {
+			t.Error("at test ", i, ", except ", test.exceptErr, ", get ", err)
+		}
+
+	}
+}
+
 // TODO
 func TestPendingProducer(t *testing.T) {
-
 }
