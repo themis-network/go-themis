@@ -379,7 +379,7 @@ func (d *Dpos) VerifyPendingProducers(chain consensus.ChainReader, header *types
 		return nil
 	}
 
-	newProducers, err := d.getPendingProducers(parent)
+	newProducers, err := d.getPendingProducers(chain, parent)
 	if err != nil || !compareProducers(header.PendingProducers, newProducers) {
 		return errInvalidPendingProducerList
 	}
@@ -491,7 +491,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Get next block time, will return err is header.coinBase is unauthorized.
 	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(currentHeader.Number.Uint64()-1), currentHeader, header.Coinbase)
 	if err != nil {
-		return err
+		return nil
 	}
 	// Set block time
 	header.Time.SetUint64(myBlockTime)
@@ -499,36 +499,17 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-func (d *Dpos) getPendingProducers(lastHeader *types.Header) ([]common.Address, error) {
-	// get top producers info by system contract
-	regContractAddrBytes, err := d.Call(d.systemContract.GetRegSystemContractCall(lastHeader))
+func (d *Dpos) getPendingProducers(chain consensus.ChainReader, lastHeader *types.Header) ([]common.Address, error) {
+	// Get all pending producers info
+	api := NewAPI(chain, d)
+	topProducersInfo, err := (*api).GetAllProducers(lastHeader.Number, big.NewInt(0))
 	if err != nil {
 		return nil, err
-	}
-	regContractAddr := d.systemContract.GetRegSystemContractAddress(regContractAddrBytes)
-	producerInfo, err := d.Call(d.systemContract.GetAllProducersInfoCall(lastHeader, &regContractAddr))
-	if err != nil {
-		return nil, err
-	}
-	producersAddr, weight, amount, err := d.systemContract.GetAllProducersInfo(producerInfo)
-	if err != nil {
-		return nil, err
-	}
-	// Cancel proposal if can not get enough producers
-	if amount.Uint64() > uint64(len(weight)) {
-		return nil, errTooFewProducers
 	}
 
-	// Get top weight producers
-	var i uint64
-	sortTable := sortNumSlice{}
-	for i, voteWeight := range weight {
-		sortTable = append(sortTable, &sortNum{i, voteWeight.Uint64()})
-	}
-	sortedProducers := sortTable.GetTop(amount.Uint64())
 	topProducers := make([]common.Address, 0)
-	for i = 0; i < amount.Uint64(); i++ {
-		topProducers = append(topProducers, producersAddr[sortedProducers[i].serial])
+	for i := 0; i < len(topProducersInfo.Producers); i++ {
+		topProducers = append(topProducers, (*topProducersInfo).Producers[i].Addr)
 	}
 
 	// Get pseudo-random order

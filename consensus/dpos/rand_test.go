@@ -1,6 +1,7 @@
 package dpos
 
 import (
+	"math/big"
     "testing"
 
     "github.com/themis-network/go-themis/common"
@@ -34,7 +35,7 @@ func TestSortNumSlice(t *testing.T) {
     for index, weight := range uint64Arr {
         originalTable = append(originalTable, &sortNum {
             serial: intArr[index],
-            num: weight,
+            num: big.NewInt(int64(weight)),
         })
     }
     copyTable := originalTable.Copy()

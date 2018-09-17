@@ -6,7 +6,6 @@ import (
 
 	"github.com/themis-network/go-themis/accounts/abi"
 	"github.com/themis-network/go-themis/common"
-	"github.com/themis-network/go-themis/core/types"
 	"github.com/themis-network/go-themis/log"
 	"github.com/themis-network/go-themis/params"
 )
@@ -21,14 +20,6 @@ const (
 	mainSystemContractABI = `[{"constant":true,"inputs":[{"name":"contractName","type":"string"}],"name":"getSystemContract","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getProposal","outputs":[{"name":"","type":"uint256"},{"name":"","type":"bool"},{"name":"","type":"address"},{"name":"","type":"uint256"},{"name":"","type":"address"},{"name":"","type":"bytes32[]"},{"name":"","type":"uint256[]"},{"name":"","type":"uint8"},{"name":"","type":"uint256"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
 	regSystemContractABI  = `[{"constant":true,"inputs":[],"name":"getAllProducersInfo","outputs":[{"name":"","type":"address[]"},{"name":"","type":"uint256[]"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
 	voteSystemContractABI = `[{"constant":true,"inputs":[{"name":"voter","type":"address"}],"name":"getVoteInfo","outputs":[{"name":"","type":"address"},{"name":"","type":"address[]"},{"name":"","type":"uint256"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]`
-
-	// Input data for get reg system contract address
-	// web3.sha3("getSystemContract(string)")[:4] + abi.encode("system.regContract")
-	getRegSystemContractInput   = "79e415950000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001273797374656d2e726567436f6e74726163740000000000000000000000000000"
-	getAllProducersInfoMethodID = "1af55073"
-
-	// Contract name
-	regContract = "system.regContract"
 )
 
 // System contract variables
@@ -225,35 +216,8 @@ func (s *SystemContractCaller) VoteABI() abi.ABI {
 	return s.voteSystemContractABI
 }
 
-func (s *SystemContractCaller) GetRegSystemContractCall(header *types.Header) SystemCall {
-	copyAddr := MainSystemContractAddr
-	return NewCallMsg(&copyAddr, common.Hex2Bytes(getRegSystemContractInput), header.Number.Uint64())
-}
-
-func (s *SystemContractCaller) GetRegSystemContractAddress(data []byte) common.Address {
-	var res = new(common.Address)
-	s.mainSystemContractABI.Unpack(res, "getSystemContract", data)
-	return *res
-}
-
-func (s *SystemContractCaller) GetAllProducersInfoCall(header *types.Header, contract *common.Address) SystemCall {
-	return NewCallMsg(contract, common.Hex2Bytes(getAllProducersInfoMethodID), header.Number.Uint64())
-}
-
-func (s *SystemContractCaller) GetAllProducersInfo(data []byte) ([]common.Address, []*big.Int, *big.Int, error) {
-	var (
-		ret0 = new([]common.Address)
-		ret1 = new([]*big.Int)
-		ret2 = new(*big.Int)
-	)
-	out := &[]interface{}{
-		ret0,
-		ret1,
-		ret2,
-	}
-
-	err := s.regSystemContractABI.Unpack(out, "getAllProducersInfo", data)
-	return *ret0, *ret1, *ret2, err
+func (s *SystemContractCaller) RegABI() abi.ABI {
+	return s.regSystemContractABI
 }
 
 func NewCallMsg(addr *common.Address, data []byte, blockNum uint64) SystemCall {

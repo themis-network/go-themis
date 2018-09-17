@@ -696,8 +696,7 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'getAllProducers',
 			call: 'dpos_getAllProducers',
-			params: 1,
-			inputFormatter: [null]
+			params: 2,
 		}),
 		new web3._extend.Method({
 			name: 'getSystemContract',
@@ -714,8 +713,12 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'getVoteInfo',
 			call: 'dpos_getVoteInfo',
-			params: 1,
-			inputFormatter: [null]
+			params: 2,
+		}),
+		new web3._extend.Method({
+			name: 'dposTest',
+			call: 'dpos_dposTest',
+			params: 2,
 		}),
 	]
 });

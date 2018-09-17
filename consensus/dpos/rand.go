@@ -3,6 +3,7 @@
 package dpos
 
 import (
+	"math/big"
 	"sort"
 	
 	"github.com/themis-network/go-themis/common"
@@ -11,7 +12,7 @@ import (
 // for rand top producers
 type sortNum struct {
 	serial int
-	num uint64
+	num *big.Int
 }
 
 type sortNumSlice []*sortNum
@@ -21,7 +22,7 @@ func (s sortNumSlice) Len() int {
 }
 
 func (s sortNumSlice) Less(i,j int) bool {
-	return s[i].num > s[j].num
+	return s[i].num.Cmp(s[j].num) > 0
 }
 
 func (s sortNumSlice) Swap(i,j int) {
