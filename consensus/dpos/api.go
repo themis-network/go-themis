@@ -184,12 +184,8 @@ func (api *API) GetAllProducers(blockNumber *big.Int, sizeNumber *big.Int) (*Pro
 
 	// Get top producers of given number
 	sortedProducers := sortTable.GetTop(getNumber)
-	//topProducers := make([]common.Address, 0)
-	//topWeight := make([]*big.Int, 0)
 	topProducers := make([]ProducerInfo, 0)
 	for i = 0; i < getNumber; i++ {
-		//topProducers = append(topProducers, producersAddr[sortedProducers[i].serial])
-		//topWeight = append(topWeight, big.NewInt(int64(sortedProducers[i].num)))
 		topProducers = append(topProducers, ProducerInfo{
 			Addr:   producersAddr[sortedProducers[i].serial],
 			Weight: sortedProducers[i].num,
@@ -362,13 +358,5 @@ func (api *API) GetSystemContract(contractName string) (*common.Address, error) 
 		return nil, err
 	}
 
-	return res, nil
-}
-
-func (api *API) DposTest(blockNumber *big.Int, sizeNumber *big.Int) (*ProducersInfo, error) {
-	res := &ProducersInfo{
-		Producers: make([]ProducerInfo, 0),
-		Size:      big.NewInt(0),
-	}
 	return res, nil
 }

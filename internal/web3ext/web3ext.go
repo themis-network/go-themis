@@ -715,11 +715,6 @@ web3._extend({
 			call: 'dpos_getVoteInfo',
 			params: 2,
 		}),
-		new web3._extend.Method({
-			name: 'dposTest',
-			call: 'dpos_dposTest',
-			params: 2,
-		}),
 	]
 });
 `
