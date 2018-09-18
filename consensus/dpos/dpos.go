@@ -379,7 +379,7 @@ func (d *Dpos) VerifyPendingProducers(chain consensus.ChainReader, header *types
 		return nil
 	}
 
-	newProducers, err := d.getPendingProducers(parent)
+	newProducers, err := d.getPendingProducers(chain, parent)
 	if err != nil || !compareProducers(header.PendingProducers, newProducers) {
 		return errInvalidPendingProducerList
 	}
@@ -491,7 +491,7 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	// Get next block time, will return err is header.coinBase is unauthorized.
 	myBlockTime, err := d.getNextBlockTime(chain.GetHeaderByNumber(currentHeader.Number.Uint64()-1), currentHeader, header.Coinbase)
 	if err != nil {
-		return err
+		return nil
 	}
 	// Set block time
 	header.Time.SetUint64(myBlockTime)
@@ -499,42 +499,93 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	return nil
 }
 
-func (d *Dpos) getPendingProducers(lastHeader *types.Header) ([]common.Address, error) {
-	// get top producers info by system contract
-	regContractAddrBytes, err := d.Call(d.systemContract.GetRegSystemContractCall(lastHeader))
+func (d *Dpos) getPendingProducers(chain consensus.ChainReader, lastHeader *types.Header) ([]common.Address, error) {
+	// Get all pending producers info
+	topProducersInfo, _, amount, err := d.GetAllSortedProducers(chain, lastHeader)
 	if err != nil {
 		return nil, err
 	}
-	regContractAddr := d.systemContract.GetRegSystemContractAddress(regContractAddrBytes)
-	producerInfo, err := d.Call(d.systemContract.GetAllProducersInfoCall(lastHeader, &regContractAddr))
-	if err != nil {
-		return nil, err
-	}
-	producersAddr, weight, amount, err := d.systemContract.GetAllProducersInfo(producerInfo)
-	if err != nil {
-		return nil, err
-	}
-	// Cancel proposal if can not get enough producers
-	if amount.Uint64() > uint64(len(weight)) {
+
+	if len(topProducersInfo) < int(amount.Int64()) {
 		return nil, errTooFewProducers
 	}
 
-	// Get top weight producers
-	var i uint64
-	sortTable := sortNumSlice{}
-	for i, voteWeight := range weight {
-		sortTable = append(sortTable, &sortNum{i, voteWeight.Uint64()})
-	}
-	sortedProducers := sortTable.GetTop(amount.Uint64())
 	topProducers := make([]common.Address, 0)
-	for i = 0; i < amount.Uint64(); i++ {
-		topProducers = append(topProducers, producersAddr[sortedProducers[i].serial])
+	for i := 0; i < int(amount.Int64()); i++ {
+		topProducers = append(topProducers, topProducersInfo[i])
 	}
 
 	// Get pseudo-random order
 	d.rand.ResetSeed(lastHeader.Number.Uint64())
 	d.rand.Shuffle(topProducers)
 	return topProducers, nil
+}
+
+func (d *Dpos) GetAllSortedProducers(chain consensus.ChainReader, header *types.Header) ([]common.Address, []*big.Int, *big.Int, error) {
+	methodString := "getAllProducersInfo"
+
+	if header == nil {
+		return nil, nil, nil, errUnknownBlock
+	}
+
+	// Get system contract address
+	sysAddress, err := NewAPI(chain, d).GetSystemContract(regContract)
+	if err != nil {
+		return nil, nil, nil, errors.New("can't get reg contract address")
+	}
+
+	caller := core.NewSystemContractCaller()
+	inputData, err := caller.RegABI().Pack(methodString)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	call := core.NewCallMsg(sysAddress, inputData, header.Number.Uint64())
+	data, err := d.Call(call)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var (
+		ret0 = new([]common.Address)
+		ret1 = new([]*big.Int)
+		ret2 = new(*big.Int)
+	)
+	out := &[]interface{}{
+		ret0,
+		ret1,
+		ret2,
+	}
+
+	err = caller.RegABI().Unpack(out, methodString, data)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Get all producers info
+	producersAddr := *ret0
+	weight := *ret1
+	amount := *ret2
+
+	// Sort all weight of producers
+	var i uint64
+	sortTable := sortNumSlice{}
+	for i, voteWeight := range weight {
+		sortTable = append(sortTable, &sortNum{i, voteWeight})
+	}
+
+	// Sort All producers
+	allLen := uint64(len(weight))
+	sortedWeight := sortTable.GetTop(allLen)
+	producers := make([]common.Address, 0)
+	weights := make([]*big.Int, 0)
+	for i = 0; i < allLen; i++ {
+		producers = append(producers, producersAddr[sortedWeight[i].serial])
+		weights = append(weights, sortedWeight[i].num)
+
+	}
+
+	return producers, weights, amount, nil
 }
 
 // Finalize implements consensus.Engine, ensuring no uncles are set and returns

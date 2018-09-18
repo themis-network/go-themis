@@ -119,7 +119,7 @@ func (d *Dpos) tryProposePendingProducers(chain consensus.ChainReader, currentHe
 	updateAllowed := header.Number.Uint64()-lastEpochEndBlockNum <= d.config.ProposeBlocksLength
 
 	if (header.Number.Uint64()%d.config.Epoch == 0 || pendingVersionNotUpdated) && updateAllowed {
-		topProducers, err := d.getPendingProducers(currentHeader)
+		topProducers, err := d.getPendingProducers(chain, currentHeader)
 		if err != nil {
 			log.Debug("get pendingProducers failed", "number", header.Number.Uint64(), "error", err)
 			return err
