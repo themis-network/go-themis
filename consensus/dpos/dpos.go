@@ -480,6 +480,8 @@ func (d *Dpos) Prepare(chain consensus.ChainReader, header *types.Header) error 
 	currentHeader := chain.CurrentHeader()
 	d.prepareDefaultField(currentHeader, header)
 
+	d.tryActiveNewProducersVersion(currentHeader, header)
+
 	// Try to update proposeIBM/dposIBM by calculating latest confirmed block
 	if err := d.tryUpdateIBM(chain, currentHeader, header); err != nil {
 		return err
